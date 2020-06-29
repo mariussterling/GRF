@@ -33,6 +33,7 @@ def score_huber_deriv(x, k, tau=0.5):
     return(res)
 
 
+# %% Huberized Loss
 k = 0.7
 x = np.arange(-4, 4, 0.0001)
 
@@ -42,11 +43,9 @@ ax[0].plot(x, loss_huber(x, k))
 ax[0].yaxis.set_major_locator(MaxNLocator(integer=True))
 ax[0].set(xlabel=r'$u$', ylabel=r"$\rho_H(u,k={0})$".format(k))
 
-
 ax[1].plot(x, score_huber(x, k))
 ax[1].set_yticks([-k, 0, k])
 ax[1].set(xlabel=r'$u$', ylabel=r"$\psi_H(u,k={0})$".format(k))
-
 
 ax[2].plot(x, score_huber_deriv(x, k))
 ax[2].yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -54,7 +53,7 @@ ax[2].set(xlabel=r'$u$', ylabel=r"$\psi^\prime_H(u,k={0})$".format(k))
 
 plt.subplots_adjust(wspace=1)
 plt.savefig(
-        fname='huberized.png',
+        fname='GRF_huberized_loss.png',
         dpi=150,
         transparent=True
 )
@@ -67,25 +66,19 @@ tau = 0.2
 fig, ax = plt.subplots(ncols=3, figsize=(8, 4), dpi=150)
 ax[0].plot(x, loss_huber(x, k, tau))
 ax[0].yaxis.set_major_locator(MaxNLocator(integer=True))
-ax[0].set(xlabel=r'$u$', ylabel=r"$\rho_{AH,%.1f}(u,k=%.1f)$"%(tau, k))
-
+ax[0].set(xlabel=r'$u$', ylabel=r"$\rho_{AH,%.1f}(u,k=%.1f)$" % (tau, k))
 
 ax[1].plot(x, score_huber(x, k, tau))
 ax[1].set_yticks([-k * (1 - tau) * 2, 0, k * tau * 2])
-ax[1].set(xlabel=r'$u$', ylabel=r"$\psi_{AH,%.1f}(u,k=%.1f)$"%(tau, k))
-
-
+ax[1].set(xlabel=r'$u$', ylabel=r"$\psi_{AH,%.1f}(u,k=%.1f)$" % (tau, k))
 
 ax[2].plot(x, score_huber_deriv(x, k, tau))
 ax[2].set_yticks([2*(1 - tau), 0, 2*tau])
-ax[2].set(xlabel=r'$u$', ylabel=r"$\psi^\prime_{AH,%.1f}(u,k=%.1f)$"%(tau, k))
-
+ax[2].set(xlabel=r'$u$', ylabel=r"$\psi^\prime_{AH,%.1f}(u,k=%.1f)$" % (tau, k))
 
 plt.subplots_adjust(wspace=1)
 plt.savefig(
-        fname='huberized_asymmetric.png',
+        fname='GRF_huberized_loss_asymmetric.png',
         dpi=150,
         transparent=True
- )
-plt.show()
-
+)
