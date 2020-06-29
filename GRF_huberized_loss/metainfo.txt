@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_huberized_loss
+
+Published in: 'METIS'
+
+Description: 'Visualisation of huberized loss function consisting of L1 and L2 loss, its scoring function and the derivative of the scoring function for symmetric and asymmetric loss function. The loss function can be used for approximation of functions, e.g. in Generalized Random Forests.'
+
+Keywords: 'Loss function, asymmetric loss, huberized, scoring function, estimation '
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '29.06.2020'
