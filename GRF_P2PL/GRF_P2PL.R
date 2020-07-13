@@ -1,20 +1,16 @@
 library(grf)
 library(pROC)
+library(glue)
 
-df = read.csv('p2p.csv')
-df$X = NULL
+df_org = read.csv('p2p.csv')
+df_org$X = NULL
 
-for (i in 22:25){
-  print(colnames(df)[i])
-  print(table(df[,i]))
-  print('')
-}
-cor(df)[, 'status']
-  
-id_train = sort(sample(nrow(df), nrow(df)*.5))
-length(setdiff(1:nrow(df), id_train))
-df_train = df[id_train, ]
-df_test  = df[setdiff(1:nrow(df), id_train), ]
+
+# Splitting into train and test data --------------------------------------
+id_train = sort(sample(nrow(df_org), nrow(df_org)*.5))
+
+df_train = df_org[id_train, ]
+df_test  = df_org[setdiff(1:nrow(df_org), id_train), ]
 
 Y = subset(df_train, select =  c(status))[[1]]
 X = subset(df_train, select = -c(status, ratio036))
@@ -23,6 +19,25 @@ W = subset(df_train, select =  c(ratio036))[[1]]
 Y_test = subset(df_test, select =  c(status))[[1]]
 X_test = subset(df_test, select = -c(status, ratio036))
 W_test = subset(df_test, select =  c(ratio036))[[1]]
+
+
+# log-regression ----------------------------------------------------------
+
+model <- glm(status ~ ., family=binomial(link='logit'), data = df_train)
+
+summary(model)
+anova(model, test='Chisq')
+Y_hat = predict(model, newdata = subset(df_test, select=-c(status)), type = 'response')
+#Y_hat = ifelse(Y_hat >= 0.1, 1, 0)
+
+roc = pROC::roc(response = Y_test, predictor = Y_hat)
+print(roc)
+plot(roc)
+print(roc$auc)
+plot(df_org$ratio004, df_org$status)
+
+
+# Generalized Random forest -----------------------------------------------
 
 tau.forest <- causal_forest(X, Y, W, tune.parameters = 'all')
 # tau.forest.quantile = grf::quantile_forest(
