@@ -1,9 +1,11 @@
 rm(list = ls())
+print(.libPaths())
 libraries = c('grf', 'pROC', 'glue', 'caret', 'future.apply')
-lapply(libraries,function(x)if(!(x %in% installed.packages())){install.packages(x)})
+lapply(libraries,function(x)if(!(x %in% installed.packages())){
+  install.packages(x)})
 lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 set.seed(42)
-log = ''
+
 
 sink_on = function() sink(file = 'log.txt', append = TRUE)
 sink_off = function() sink(file = NULL)
@@ -50,7 +52,7 @@ sink_on()
 print('')
 print('GRF:')
 
-regRF <- regression_forest(X = X, Y = Y, tune.parameters = 'all')
+regRF <- regression_forest(X = X, Y = Y, tune.parameters = 'all', num.trees = 5000)
 print(regRF)
 x = variable_importance(regRF, max.depth = 100)
 row.names(x) = colnames(X)
@@ -64,6 +66,7 @@ Y_hat = predict(regRF, X_test)
 print("test:")
 print(pROC::roc(response = Y_test, predictor = Y_hat$predictions))
 sink_off()
+save(regRF, file = 'regression_forest.Rdata')
 # get_Y_hat function ------------------------------------------------------
 
 get_var_xs = function(X, var){
@@ -117,7 +120,20 @@ Y_hats = future_lapply(1:nrow(X_test), function(i) {
   )},
   future.packages	= c('grf')
 )
-save(Y_hats, file = 'ICE_mean.Rdata')
+save(Y_hats, file = 'ICE_mean_test.Rdata')
+
+plan(multisession) ## Run in parallel on local computer
+Y_hats = future_lapply(1:nrow(X), function(i) {
+  get_Y_hat_for_var(
+    regRF = regRF,
+    var = 'ratio001',
+    i = i,
+    X = X,
+    comp_variance = TRUE
+  )},
+  future.packages	= c('grf')
+)
+save(Y_hats, file = 'ICE_mean_test.Rdata')
 
 Y_hat = data.frame(
   predictions = apply(sapply(Y_hats, function(x) x[, 1]), 1, mean),
