@@ -15,49 +15,49 @@ Area under the curve: 0.8178
 [1] ""
 [1] "GRF:"
 GRF forest object of type regression_forest 
-Number of trees: 2000 
+Number of trees: 5000 
 Number of training samples: 11284 
 Variable importance: 
     1     2     3     4     5     6     7     8     9    10    11    12    13 
-0.710 0.003 0.040 0.005 0.004 0.009 0.004 0.005 0.005 0.004 0.004 0.029 0.064 
+0.703 0.004 0.043 0.006 0.004 0.009 0.003 0.005 0.005 0.004 0.003 0.030 0.066 
    14    15    16    17    18    19    20    21    22    23    24 
-0.003 0.003 0.002 0.024 0.007 0.004 0.003 0.016 0.040 0.000 0.013 
+0.003 0.003 0.002 0.024 0.007 0.004 0.003 0.016 0.039 0.000 0.014 
            [,1]
-ratio001 0.6236
-ratio002 0.0071
-ratio003 0.0388
-ratio004 0.0099
-ratio005 0.0087
-ratio006 0.0153
-ratio008 0.0086
-ratio011 0.0098
-ratio012 0.0100
-ratio017 0.0092
-ratio018 0.0085
-ratio019 0.0301
-ratio027 0.0608
-ratio029 0.0078
-ratio030 0.0070
+ratio001 0.6178
+ratio002 0.0076
+ratio003 0.0410
+ratio004 0.0097
+ratio005 0.0088
+ratio006 0.0152
+ratio008 0.0076
+ratio011 0.0101
+ratio012 0.0114
+ratio017 0.0085
+ratio018 0.0083
+ratio019 0.0312
+ratio027 0.0631
+ratio029 0.0067
+ratio030 0.0073
 DIO      0.0070
-DPO      0.0267
+DPO      0.0274
 DSO      0.0125
-turnover 0.0106
-nace     0.0099
-ratio036 0.0145
-ratio037 0.0349
+turnover 0.0108
+nace     0.0089
+ratio036 0.0143
+ratio037 0.0341
 ratio039 0.0002
-ratio040 0.0115
+ratio040 0.0127
 [1] "train:"
 
 Call:
 roc.default(response = Y, predictor = Y_hat$predictions)
 
 Data: Y_hat$predictions in 10073 controls (Y 0) < 1211 cases (Y 1).
-Area under the curve: 0.8442
+Area under the curve: 0.8444
 [1] "test:"
 
 Call:
 roc.default(response = Y_test, predictor = Y_hat$predictions)
 
 Data: Y_hat$predictions in 3340 controls (Y_test 0) < 421 cases (Y_test 1).
-Area under the curve: 0.8575
+Area under the curve: 0.8578
