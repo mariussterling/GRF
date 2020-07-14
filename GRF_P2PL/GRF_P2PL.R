@@ -5,6 +5,8 @@ lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 set.seed(42)
 log = ''
 
+sink_on = function() sink(file = 'log.txt', append = TRUE)
+sink_off = function() sink(file = NULL)
 # Read in data ------------------------------------------------------------
 df_org = read.csv('p2p.csv')
 df_org$X = NULL
@@ -29,38 +31,47 @@ summary(model)
 # anova(model, test='Chisq')
 Y_hat = predict(model)
 
-sink(file = 'log.txt')
+sink_on()
 print('Log-Regression')
 print(pROC::roc(response = Y, predictor = Y_hat))
-sink(file = NULL)
+sink_off()
 
 Y_hat = predict(model, newdata = subset(df_test, select=-c(status)), type = 'response')
 roc = pROC::roc(response = Y_test, predictor = Y_hat)
 plot(roc)
 
-sink(file = 'log.txt')
+sink_on()
 print('Test:')
 print(roc)
-sink(file = NULL)
+sink_off()
 
 # regression forest -------------------------------------------------------
+sink_on()
+print('')
+print('GRF:')
+
 regRF <- regression_forest(X = X, Y = Y, tune.parameters = 'all')
+print(regRF)
+x = variable_importance(regRF, max.depth = 100)
+row.names(x) = colnames(X)
+print(round(x,4))
 Y_hat = predict(regRF)
-sink(file = 'log.txt')
+
 print("train:")
 print(pROC::roc(response = Y, predictor = Y_hat$predictions))
 
 Y_hat = predict(regRF, X_test)
 print("test:")
 print(pROC::roc(response = Y_test, predictor = Y_hat$predictions))
-sink(file = NULL)
-# plot --------------------------------------------------------------------
+sink_off()
+# get_Y_hat function ------------------------------------------------------
 
 get_var_xs = function(X, var){
   return(seq(min(X[,var]), min(1, max(X[,var])), length.out = 100))
 }
-get_Y_hat_for_var = function(regRF = regRF, var = 'ratio001', i = NULL, comp_variance = TRUE, X = X){
-  x = get_var_xs(X, var)
+get_Y_hat_for_var = function(regRF = regRF, var = 'ratio001', i = NULL,
+                             comp_variance = TRUE, X = X){
+  x = get_var_xs(X = X, var = var)
   X2 = data.frame(x)
   # X2 = data.frame(seq(-1, 1, length.out = 100))
   colnames(X2) = var
@@ -77,17 +88,20 @@ get_Y_hat_for_var = function(regRF = regRF, var = 'ratio001', i = NULL, comp_var
   return(Y_hat)
 }
 
-Y_hat = get_Y_hat_for_var(regRF = regRF, var = var, i = 1, X = X_test)
-save(Y_hat, file = 'ICE_one.Rdata')
 # ICE (Individual Conditional Expectation) --------------------------------
+var = 'ratio001'
+Y_hat = get_Y_hat_for_var(
+  regRF = regRF, var = var, i = 1,
+  comp_variance = TRUE, X = X_test
+)
+save(Y_hat, file = 'ICE_one.Rdata')
 svg(file='ICE_one.svg', bg = "transparent")
-  var = 'ratio001'
-  x = get_var_xs(X, var)
+  x = get_var_xs(X = X_test, var = var)
   sigma.hat = sqrt(Y_hat$variance.estimates)
   plot(x, Y_hat$predictions, ylim = range(Y_hat$predictions, 0, 1), 
-       xlab = var, ylab = "ICE", type = "l")
-  lines(x, Y_hat$predictions + 1.96 * sigma.hat, col = 1, lty = 2)
-  lines(x, Y_hat$predictions - 1.96 * sigma.hat, col = 1, lty = 2)
+       xlab = var, ylab = "ICE", type = "l", col = 'blue', lwd = 2)
+  lines(x, Y_hat$predictions + 1.96 * sigma.hat, lty = 2, col ='blue')
+  lines(x, Y_hat$predictions - 1.96 * sigma.hat, lty = 2, col ='blue')
 dev.off()
 # Mean ICE ----------------------------------------------------------------
 
