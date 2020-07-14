@@ -101,7 +101,7 @@ Y_hat = get_Y_hat_for_var(
   comp_variance = TRUE, X = X_test
 )
 save(Y_hat, file = 'ICE_one.Rdata')
-svg(file='ICE_one.svg', bg = "transparent")
+png(file='ICE_one.png', bg = 'transparent')
   x = get_var_xs(X = X_test, var = var)
   sigma.hat = sqrt(Y_hat$variance.estimates)
   plot(x, Y_hat$predictions, ylim = range(Y_hat$predictions, 0, 1), 
@@ -144,7 +144,7 @@ Y_hat = data.frame(
 )
 Y_hat_predictions = sapply(Y_hats, function(x) x[,1])
 
-jpeg(file='ICE_mean.jpg', bg = "transparent")
+png(file='ICE_mean.png', bg = "transparent")
   var = 'ratio001'
   x = get_var_xs(X = X_test, var = var)
   plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
