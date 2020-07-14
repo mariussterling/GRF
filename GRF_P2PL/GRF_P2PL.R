@@ -133,7 +133,7 @@ Y_hats = future_lapply(1:nrow(X), function(i) {
   )},
   future.packages	= c('grf')
 )
-save(Y_hats, file = 'ICE_mean_test.Rdata')
+save(Y_hats, file = 'ICE_mean_train.Rdata')
 
 Y_hat = data.frame(
   predictions = apply(sapply(Y_hats, function(x) x[, 1]), 1, mean),
