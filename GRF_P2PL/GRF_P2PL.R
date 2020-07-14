@@ -9,6 +9,9 @@ set.seed(42)
 
 sink_on = function() sink(file = 'log.txt', append = TRUE)
 sink_off = function() sink(file = NULL)
+
+sink_on = function() return()
+sink_off = function() return()
 # Read in data ------------------------------------------------------------
 df_org = read.csv('p2p.csv')
 df_org$X = NULL
@@ -122,20 +125,34 @@ Y_hats = future_lapply(1:nrow(X_test), function(i) {
 )
 save(Y_hats, file = 'ICE_mean_test.Rdata')
 
-plan(multisession) ## Run in parallel on local computer
-Y_hats = future_lapply(1:nrow(X), function(i) {
-  get_Y_hat_for_var(
-    regRF = regRF,
-    var = 'ratio001',
-    i = i,
-    X = X,
-    comp_variance = TRUE
-  )},
-  future.packages	= c('grf')
-)
-save(Y_hats, file = 'ICE_mean_train.Rdata')
+# plan(multisession) ## Run in parallel on local computer
+# Y_hats = future_lapply(1:nrow(X), function(i) {
+#   get_Y_hat_for_var(
+#     regRF = regRF,
+#     var = 'ratio001',
+#     i = i,
+#     X = X,
+#     comp_variance = TRUE
+#   )},
+#   future.packages	= c('grf')
+# )
+# save(Y_hats, file = 'ICE_mean_train.Rdata')
 
 Y_hat = data.frame(
-  predictions = apply(sapply(Y_hats, function(x) x[, 1]), 1, mean),
-  variance.estimates = apply(sapply(Y_hats, function(x) x[, 2]), 1, mean)
+  predictions = apply(sapply(Y_hats, function(x) x[, 1]), 1, median),
+  variance.estimates = apply(sapply(Y_hats, function(x) x[, 2]), 1, median)
 )
+Y_hat_predictions = sapply(Y_hats, function(x) x[,1])
+
+jpeg(file='ICE_mean.jpg', bg = "transparent")
+  var = 'ratio001'
+  x = get_var_xs(X = X_test, var = var)
+  plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
+       xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
+  for(i in 2:min(ncol(Y_hat_predictions), 50000)){
+    lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
+  }
+  lines(x, Y_hat$predictions, col='blue', lwd = 2)
+  lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+  lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+dev.off()
