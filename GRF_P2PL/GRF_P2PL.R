@@ -1,30 +1,31 @@
+rm(list = ls())
 library(grf)
 library(pROC)
 library(glue)
+set.seed(42)
 
 df_org = read.csv('p2p.csv')
 df_org$X = NULL
 
 
 # Splitting into train and test data --------------------------------------
-id_train = sort(sample(nrow(df_org), nrow(df_org)*.5))
+id_train = sort(sample(nrow(df_org), nrow(df_org)*.75))
+#id_train = sort(sample(nrow(df_org), nrow(df_org)*.15))
 
 df_train = df_org[id_train, ]
 df_test  = df_org[setdiff(1:nrow(df_org), id_train), ]
 
-Y = subset(df_train, select =  c(status))[[1]]
-X = subset(df_train, select = -c(status, ratio036))
-W = subset(df_train, select =  c(ratio036))[[1]]
+Y = df_train$status
+X = subset(df_train, select = -c(status, ratio037))
+W = df_train$ratio037
 
-Y_test = subset(df_test, select =  c(status))[[1]]
-X_test = subset(df_test, select = -c(status, ratio036))
-W_test = subset(df_test, select =  c(ratio036))[[1]]
+Y_test = df_test$status
+X_test = subset(df_test, select = -c(status, ratio037))
+W_test = df_test$ratio037
 
 
 # log-regression ----------------------------------------------------------
-
 model <- glm(status ~ ., family=binomial(link='logit'), data = df_train)
-
 summary(model)
 anova(model, test='Chisq')
 Y_hat = predict(model, newdata = subset(df_test, select=-c(status)), type = 'response')
@@ -34,15 +35,99 @@ roc = pROC::roc(response = Y_test, predictor = Y_hat)
 print(roc)
 plot(roc)
 print(roc$auc)
-plot(df_org$ratio004, df_org$status)
+
+
+
+# regression forest -------------------------------------------------------
+tau.forest <- regression_forest(X=cbind(X,W), Y=Y, tune.parameters = 'all')
+
+Y_hat = predict(tau.forest)
+roc = pROC::roc(response = Y, predictor = Y_hat$predictions)
+print("train:")
+print(roc)
+
+Y_hat = predict(tau.forest, cbind(X_test,W_test))
+roc = pROC::roc(response = Y_test, predictor = Y_hat$predictions)
+print("test:")
+print(roc)
+
+# plot --------------------------------------------------------------------
+
+var = 'ratio001'
+X2 = data.frame(seq(min(X[,var]), min(1, max(X[,var])), length.out = 500))
+# X2 = data.frame(seq(-1, 1, length.out = 100))
+colnames(X2) = var
+X2 = cbind(X2, cbind(X[, !grepl(var, colnames(X))], W)[2,])
+
+tau_hat = predict(tau.forest, X2, estimate.variance = TRUE)
+sigma.hat <- sqrt(tau_hat$variance.estimates)
+
+plot(X2[, var], tau_hat$predictions, ylim = range(tau_hat$predictions, 0, 1), 
+     xlab = var, ylab = "Y_hat", type = "l")
+lines(X2[, var], tau_hat$predictions + 1.96 * sigma.hat, col = 1, lty = 2)
+lines(X2[, var], tau_hat$predictions - 1.96 * sigma.hat, col = 1, lty = 2)
 
 
 # Generalized Random forest -----------------------------------------------
 
+tau.forest <- causal_forest(X=X, Y=Y, W=W, tune.parameters = 'all')
+
+Y_hat = predict(tau.forest)
+roc = pROC::roc(response = Y, predictor = Y_hat$predictions)
+print("train:")
+print(roc)
+
+Y_hat = predict(tau.forest, X_test)
+roc = pROC::roc(response = Y_test, predictor = Y_hat$predictions)
+print("test:")
+print(roc)
+
+
+vi = grf::variable_importance(tau.forest, max.depth = 100)
+row.names(vi) = colnames(X)
+print(vi)
+
+
+# plot --------------------------------------------------------------------
+
+var = 'ratio001'
+X2 = data.frame(seq(min(X[,var]), max(X[,var]), 0.01))
+colnames(X2) = var
+X2 = cbind(X2, X[, !grepl(var, colnames(X))][1,])
+tau_hat = predict(tau.forest, X2, estimate.variance = TRUE)
+sigma.hat <- sqrt(tau_hat$variance.estimates)
+
+plot(X2[, var], tau_hat$predictions, ylim = range(tau_hat$predictions, -1, 2), 
+     xlab = var, ylab = "CLATE", type = "l")
+lines(X2[, var], tau_hat$predictions + 1.96 * sigma.hat, col = 1, lty = 2)
+lines(X2[, var], tau_hat$predictions - 1.96 * sigma.hat, col = 1, lty = 2)
+
+predict()
+# causal forest -----------------------------------------------------------
+
+tau.forest <- causal_forest(X, Y, W, tune.parameters = 'all')
+Y_hat = predict(tau.forest, cbind(X_test, W_test))
+roc = pROC::roc(response = Y_test, predictor = Y_hat$predictions)
+print(roc)
+plot(roc)
+plot(Y_test, Y_hat$predictions, #ylim = range(Y_hat$predictions, 0, 2), 
+     xlab = "x", ylab = "tau", type = "l")
+
+
+# a -----------------------------------------------------------------------
+tau.forest <- causal_forest(X, Y, W, num.trees = 4000)
+tau.hat <- predict(tau.forest, X.test, estimate.variance = TRUE)
+sigma.hat <- sqrt(tau.hat$variance.estimates)
+
+plot(X.test[, 1], tau.hat$predictions, ylim = range(tau.hat$predictions + 1.96 * sigma.hat, tau.hat$predictions - 1.96 * sigma.hat, 0, 2), xlab = "x", ylab = "tau", type = "l")
+lines(X.test[, 1], tau.hat$predictions + 1.96 * sigma.hat, col = 1, lty = 2)
+lines(X.test[, 1], tau.hat$predictions - 1.96 * sigma.hat, col = 1, lty = 2)
+lines(X.test[, 1], pmax(0, X.test[, 1]), col = 2, lty = 1)
+
+# b -----------------------------------------------------------------------
 tau.forest <- causal_forest(X, Y, W, tune.parameters = 'all')
 # tau.forest.quantile = grf::quantile_forest(
 #   X, Y, quantiles = c(0.025, 0.25, 0.5, 0.75, 0.975))
-tau.forest <- regression_forest(X, Y, tune.parameters = 'all')
 
 
 roc = apply(predict(tau.forest.quantile, X_test), 2, function(x){
@@ -55,7 +140,9 @@ roc = pROC::roc(response = Y_test, predictor = predict(tau.forest, X_test)[[1]])
 plot(roc)
 pROC::auc(roc)
 
-causal_forest(df)
+
+# !!!VORLAGE --------------------------------------------------------------
+#causal_forest(df)
 # Generate data.
 n <- 2000
 p <- 10
@@ -121,8 +208,9 @@ forest.Y.varimp <- variable_importance(forest.Y)
 selected.vars <- which(forest.Y.varimp / mean(forest.Y.varimp) > 0.2)
 
 tau.forest <- causal_forest(X[, selected.vars], Y, W,
-                            W.hat = W.hat, Y.hat = Y.hat,
+                            #W.hat = W.hat, Y.hat = Y.hat,
                             tune.parameters = "all")
 
 # Check whether causal forest predictions are well calibrated.
 test_calibration(tau.forest)
+predict(tau.forest)$predictions
