@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_P2PL
+
+Published in: 'METIS'
+
+Description: 'Computation and visualisation of (mean) ICE (individual conditional expectation) computed with a generalized Random Forest, for variable "ratio001"= (Total assets / Shareholder Funds) - 1 in the peer to peer lending dataset as was used in Giudici et al. (2019).'
+
+Keywords: 'credit scoring, credit default, individual, GRF, generalized random forest, ICE, individual conditional expectation, approximation'
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '14.07.2020'
