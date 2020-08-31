@@ -68,28 +68,18 @@ sink_on()
 print('')
 print('quantile RF:')
 
+qs = c(0.05, 0.25, 0.5, 0.75, 0.95)
 qRF <- quantile_forest(
   X = cbind(X, W), Y = Y,
-  num.trees = 2000, quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95)
+  num.trees = 200, quantiles = qs
 )
 print(qRF)
 x = variable_importance(qRF, max.depth = 50)
 row.names(x) = colnames(X)
 print(round(x,4))
-Y_hat = predict(qRF)[ ,1]
+Y_hat = predict(qRF)
 
-print("train:")
-print(glue::glue("MSE: {mean((Y_hat - Y)**2)}"))
-print(glue::glue("rsq: {round(rsq(Y, Y_hat),4)}"))
-print(glue::glue("rsq_adj: {round(rsq_adj(Y, Y_hat, ncol(qRF$X.orig)),4)}"))
-
-Y_test_hat = predict(qRF, cbind(X_test, W=W_test))
-print("test:")
-print(glue::glue("MSE: {mean(((Y_test_hat - Y_test)**2)[,1])}"))
-print(glue::glue("rsq: {round(rsq(Y_test, Y_test_hat),4)}"))
-print(glue::glue("rsq_adj: {round(rsq_adj(Y_test, Y_test_hat, ncol(qRF$X.orig)),4)}"))
-sink_off()
-save(qRF, file = 'regression_forest.Rdata')
+save(qRF, file = 'quantile_forest.Rdata')
 
 # get_Y_hat function ------------------------------------------------------
 get_var_xs = function(X, var, l = 100){
@@ -123,14 +113,12 @@ Y_hat = get_Y_hat_for_var(
 get_var_xs(X = cbind(X_test, W = W_test), var=var)
 save(Y_hat, file = 'ICE_one.Rdata')
 png(file='ICE_one.png', bg = 'transparent')
-x = get_var_xs(X = X_test, var = var, l = 7)
-sigma.hat = sqrt(Y_hat$variance.estimates)
-ci_l = Y_hat$predictions - 1.96 * sigma.hat
-ci_u = Y_hat$predictions + 1.96 * sigma.hat
-plot(x, Y_hat$predictions,
-     xlab = var, ylab = "ICE", type = "l", col = 'blue', lwd = 2,
-     # ylim = range(Y_hat$predictions, 0, 1),
-     ylim = c(min(ci_l), max(ci_u)))
+  x = get_var_xs(X = X_test, var = var, l = 7)
+  plot(x, Y_hat[,1],
+       xlab = var, ylab = "ICE", type = "l", col = 'blue', lwd = 2,
+       # ylim = range(Y_hat$predictions, 0, 1),
+       ylim = c(min(ci_l), max(ci_u))
+       )
 lines(x, ci_u, lty = 2, col ='blue')
 lines(x, ci_l, lty = 2, col ='blue')
 dev.off()
