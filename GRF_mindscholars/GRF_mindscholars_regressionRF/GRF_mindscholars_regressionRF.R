@@ -136,7 +136,7 @@ get_Y_hat_for_var = function(regRF = regRF, var, i = NULL,
 var = 'S3'
 Y_hat = get_Y_hat_for_var(
   regRF = regRF, var = var, i = 2,
-  comp_variance = TRUE, X = cbind(X_test, W = W_test), l =7
+  comp_variance = TRUE, X = cbind(X_test, W = W_test), l = 7
 )
 get_var_xs(X = cbind(X_test, W = W_test), var=var)
 save(Y_hat, file = 'ICE_one.Rdata')
