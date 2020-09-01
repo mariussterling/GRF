@@ -1,5 +1,5 @@
 
-Name of Quantlet: GRF_mindscholars
+Name of Quantlet: GRF_mindscholars_regressionRF
 
 Published in: 'METIS'
 
