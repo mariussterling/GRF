@@ -63,57 +63,29 @@ X = cbind(X.raw[,-which(names(X.raw) %in% c("C1", "XC"))], C1.exp, XC.exp)
 X_test = X[-trainIndex,]
 X = X[trainIndex,]
 
-# regression ----------------------------------------------------------
-model <- lm(Y ~ ., data = cbind(X, W))
-Y_hat = predict(model)
-
-sink_on()
-print('linear regression')
-summary(model)
-print(glue::glue("MSE: {mean((Y_hat - Y)**2)}"))
-print(glue::glue("rsq: {round(rsq(Y,Y_hat),4)}"))
-print(glue::glue("rsq_adj: {round(rsq_adj(Y,Y_hat, model$rank),4)}"))
-sink_off()
-
-Y_test_hat = predict(model, newdata = cbind(X_test, W=W_test))
-sink_on()
-print('Test:')
-print(glue::glue("MSE: {mean((Y_test_hat - Y_test)**2)}"))
-print(glue::glue("rsq: {round(rsq(Y_test, Y_test_hat),4)}"))
-print(glue::glue("rsq: {round(rsq_adj(Y_test, Y_test_hat, model$rank),4)}"))
-sink_off()
-
 # regression forest -------------------------------------------------------
 sink_on()
 print('')
-print('causal RF:')
+print('quantile RF:')
 
-regRF <- regression_forest(X = cbind(X, W), Y = Y, tune.parameters = 'all',
-                         num.trees = 2000)
-print(regRF)
-x = variable_importance(regRF, max.depth = 50)
+qs = c(0.05, 0.25, 0.5, 0.75, 0.95)
+qRF <- quantile_forest(
+  X = cbind(X, W), Y = Y,
+  num.trees = 200, quantiles = qs
+)
+print(qRF)
+x = variable_importance(qRF, max.depth = 50)
 row.names(x) = colnames(X)
 print(round(x,4))
-Y_hat = predict(regRF)[ ,1]
+Y_hat = predict(qRF)
 
-print("train:")
-print(glue::glue("MSE: {mean((Y_hat - Y)**2)}"))
-print(glue::glue("rsq: {round(rsq(Y, Y_hat),4)}"))
-print(glue::glue("rsq_adj: {round(rsq_adj(Y, Y_hat, ncol(regRF$X.orig)),4)}"))
-
-Y_test_hat = predict(regRF, cbind(X_test, W=W_test))
-print("test:")
-print(glue::glue("MSE: {mean(((Y_test_hat - Y_test)**2)[,1])}"))
-print(glue::glue("rsq: {round(rsq(Y_test, Y_test_hat),4)}"))
-print(glue::glue("rsq_adj: {round(rsq_adj(Y_test, Y_test_hat, ncol(regRF$X.orig)),4)}"))
-sink_off()
-save(regRF, file = 'regression_forest.Rdata')
+save(qRF, file = 'quantile_forest.Rdata')
 
 # get_Y_hat function ------------------------------------------------------
 get_var_xs = function(X, var, l = 100){
   return(seq(min(X[,var]), max(X[,var]), length.out = l))
 }
-get_Y_hat_for_var = function(regRF = regRF, var, i = NULL,
+get_Y_hat_for_var = function(qRF = qRF, var, i = NULL,
                              comp_variance = TRUE, X = X, l =100){
   x = get_var_xs(X = X, var = var, l=l)
   X2 = data.frame(x)
@@ -128,29 +100,27 @@ get_Y_hat_for_var = function(regRF = regRF, var, i = NULL,
   X2[, 2:(length(X_fill) + 1)] = X_fill
   colnames(X2)[2:ncol(X2)] = names(X_fill)
   
-  Y_hat = predict(regRF, X2, estimate.variance = comp_variance)
+  Y_hat = predict(qRF, X2, estimate.variance = comp_variance)
   return(Y_hat)
 }
 
 # ICE (Individual Conditional Expectation) --------------------------------
 var = 'S3'
 Y_hat = get_Y_hat_for_var(
-  regRF = regRF, var = var, i = 2,
-  comp_variance = TRUE, X = cbind(X_test, W = W_test), l =7
+  qRF = qRF, var = var, i = 2,
+  comp_variance = TRUE, X = cbind(X_test, W = W_test), l = 7
 )
 get_var_xs(X = cbind(X_test, W = W_test), var=var)
 save(Y_hat, file = 'ICE_one.Rdata')
 png(file='ICE_one.png', bg = 'transparent')
   x = get_var_xs(X = X_test, var = var, l = 7)
-  sigma.hat = sqrt(Y_hat$variance.estimates)
-  ci_l = Y_hat$predictions - 1.96 * sigma.hat
-  ci_u = Y_hat$predictions + 1.96 * sigma.hat
-  plot(x, Y_hat$predictions,
+  plot(x, Y_hat[,1],
        xlab = var, ylab = "ICE", type = "l", col = 'blue', lwd = 2,
        # ylim = range(Y_hat$predictions, 0, 1),
-       ylim = c(min(ci_l), max(ci_u)))
-  lines(x, ci_u, lty = 2, col ='blue')
-  lines(x, ci_l, lty = 2, col ='blue')
+       ylim = c(min(ci_l), max(ci_u))
+       )
+lines(x, ci_u, lty = 2, col ='blue')
+lines(x, ci_l, lty = 2, col ='blue')
 dev.off()
 # Mean ICE ----------------------------------------------------------------
 
@@ -158,7 +128,7 @@ plan(multisession) ## Run in parallel on local computer
 nrow(X_test)
 Y_hats = future_lapply(1:nrow(X_test), function(i) {
   get_Y_hat_for_var(
-    regRF = regRF,
+    qRF = qRF,
     var = 'S3',
     i = i,
     X = cbind(X_test, W=W_test),
@@ -172,7 +142,7 @@ save(Y_hats, file = 'ICE_mean_test.Rdata')
 # plan(multisession) ## Run in parallel on local computer
 # Y_hats = future_lapply(1:nrow(X), function(i) {
 #   get_Y_hat_for_var(
-#     regRF = regRF,
+#     qRF = qRF,
 #     var = 'ratio001',
 #     i = i,
 #     X = X,
@@ -190,13 +160,13 @@ Y_hat_predictions = sapply(Y_hats, function(x) x[,1])
 
 png(file='ICE_mean.png', bg = "transparent")
 var = 'S3'
-  x = get_var_xs(X = X_test, var = var, l = 7)
-  plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
-       xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
-  for(i in 2:min(ncol(Y_hat_predictions), 50000)){
-    lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
-  }
-  lines(x, Y_hat$predictions, col='blue', lwd = 2)
-  lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
-  lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+x = get_var_xs(X = X_test, var = var, l = 7)
+plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
+     xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
+for(i in 2:min(ncol(Y_hat_predictions), 50000)){
+  lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
+}
+lines(x, Y_hat$predictions, col='blue', lwd = 2)
+lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
 dev.off()

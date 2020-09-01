@@ -1,33 +1,3 @@
-[<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/banner.png" width="888" alt="Visit QuantNet">](http://quantlet.de/)
-
-## [<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/qloqo.png" alt="Visit QuantNet">](http://quantlet.de/) **GRF_mindscholars_regressionRF** [<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/QN2.png" width="60" alt="Visit QuantNet 2.0">](http://quantlet.de/)
-
-```yaml
-
-
-Name of Quantlet: GRF_mindscholars_regressionRF
-
-Published in: 'METIS'
-
-Description: 'Computation and visualisation of (mean) ICE (individual conditional expectation) computed with a generalized Random Forest, for variable S3 (=Students self-reported expectation for success in the future) in the National Mindset Study data set used by Athey and Wager in "Estimating Treatment Effects with Causal Forests: An Application".'
-
-Keywords: 'individual, GRF, generalized random forest, ICE, individual conditional expectation, approximation, mindset, mindset nudging'
-
-Author: 'Marius Sterling'
-
-See also: ''
-
-Submitted:  '31.08.2020'
-
-```
-
-![Picture1](ICE_mean.png)
-
-![Picture2](ICE_one.png)
-
-### R Code
-```r
-
 # Example based on 
 # https://github.com/grf-labs/grf/tree/master/experiments/
 
@@ -166,7 +136,7 @@ get_Y_hat_for_var = function(regRF = regRF, var, i = NULL,
 var = 'S3'
 Y_hat = get_Y_hat_for_var(
   regRF = regRF, var = var, i = 2,
-  comp_variance = TRUE, X = cbind(X_test, W = W_test), l =7
+  comp_variance = TRUE, X = cbind(X_test, W = W_test), l = 7
 )
 get_var_xs(X = cbind(X_test, W = W_test), var=var)
 save(Y_hat, file = 'ICE_one.Rdata')
@@ -230,6 +200,3 @@ var = 'S3'
   lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
   lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
 dev.off()
-```
-
-automatically created on 2020-08-31
