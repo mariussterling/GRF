@@ -63,7 +63,7 @@ X = cbind(X.raw[,-which(names(X.raw) %in% c("C1", "XC"))], C1.exp, XC.exp)
 X_test = X[-trainIndex,]
 X = X[trainIndex,]
 
-# regression ----------------------------------------------------------
+# OLS regression ----------------------------------------------------------
 model <- lm(Y ~ ., data = cbind(X, W))
 Y_hat = predict(model)
 
@@ -86,8 +86,7 @@ sink_off()
 # regression forest -------------------------------------------------------
 sink_on()
 print('')
-print('causal RF:')
-
+print('regression RF:')
 regRF <- regression_forest(X = cbind(X, W), Y = Y, tune.parameters = 'all',
                          num.trees = 2000)
 print(regRF)
