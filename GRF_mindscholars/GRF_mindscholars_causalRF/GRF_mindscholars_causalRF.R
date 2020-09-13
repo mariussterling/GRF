@@ -10,11 +10,11 @@ lapply(libraries,function(x)if(!(x %in% installed.packages())){
 lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 
 # Defining sink -----------------------------------------------------------
-sink_on = function() sink(file = 'log.txt', append = TRUE)
-sink_off = function() sink(file = NULL)
+# sink_on = function() sink(file = 'log.txt', append = TRUE)
+# sink_off = function() sink(file = NULL)
 
-# sink_on = function() return()
-# sink_off = function() return()
+sink_on = function() return()
+sink_off = function() return()
 
 
 # Defining rsq and adj rsq ------------------------------------------------
@@ -88,25 +88,31 @@ sink_on()
 print('')
 print('regression RF:')
 regRF <- regression_forest(X = X, Y = Y, tune.parameters = 'all',
-                           num.trees = 2000)
+                           num.trees = 200)
 rf = regRF
 print(rf)
 x = variable_importance(rf, max.depth = 50)
 row.names(x) = colnames(X)
-print(round(x,4))
+print(round(x[order(x, decreasing = TRUE),],4))
+
+# print('propensity score RF:')
+# propensityRF <- regression_forest(X = X, Y = W, tune.parameters = 'all', num.trees = 2000)
+# roc = pROC::roc(W, propensityRF$predictions[,1])
+# plot(roc)
 
 print('causal RF:')
 cRF <- causal_forest(X = X, W = W, Y = Y, Y.hat = regRF$predictions,
-                     tune.parameters = 'all', num.trees = 2000)
+                     tune.parameters = 'all', num.trees = 200)
 rf = cRF
 print(rf)
 x = variable_importance(rf, max.depth = 50)
 row.names(x) = colnames(X)
-print(round(x,4))
+print(round(x[order(x, decreasing = TRUE),],4))
+
 
 
 # MSE, rsq, adj-rsq on train and test -------------------------------------
-Y_hat = regRF$pre
+Y_hat = regRF$predictions
 print("train:")
 print(glue::glue("MSE: {mean((Y_hat - Y)**2)}"))
 print(glue::glue("rsq: {round(rsq(Y, Y_hat),4)}"))
@@ -185,21 +191,123 @@ Y_hat_predictions = list()
 Y_hat = list()
 for(w in unique(W_test)){
   Y_hat[[as.character(w)]] = data.frame(
-    predictions = apply(sapply(Y_hats[W_test == w], function(x) x[, 1]), 1, median),
-    variance.estimates = apply(sapply(Y_hats[W_test == w], function(x) x[, 2]), 1, median)
+    predictions = apply(sapply(Y_hats[W_test == w], function(x) x$predictions), 1, median),
+    variance.estimates = apply(sapply(Y_hats[W_test == w], function(x) x$variance.estimates), 1, median)
   )
-  Y_hat_predictions[[as.character(w)]] = sapply(Y_hats[[as.character(w)]], function(x) x$predictions)
+  Y_hat_predictions[[as.character(w)]] = sapply(Y_hats[W_test == w], function(x) x$predictions)
 }
+
+# png(file='ICE_mean.png', bg = "transparent")
+# var = 'S3'
+#   x = get_var_xs(X = X_test, var = var, l = 7)
+#   plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
+#        xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
+#   for(i in 2:min(ncol(Y_hat_predictions), 50000)){
+#     lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
+#   }
+#   lines(x, Y_hat$predictions, col='blue', lwd = 2)
+#   lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+#   lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+# dev.off()
 
 png(file='ICE_mean.png', bg = "transparent")
 var = 'S3'
   x = get_var_xs(X = X_test, var = var, l = 7)
-  plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
-       xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
-  for(i in 2:min(ncol(Y_hat_predictions), 50000)){
-    lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
-  }
-  lines(x, Y_hat$predictions, col='blue', lwd = 2)
-  lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
-  lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
+  
+  u0 = Y_hat[['0']]$predictions + 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  l0 = Y_hat[['0']]$predictions - 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  u1 = Y_hat[['1']]$predictions + 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  l1 = Y_hat[['1']]$predictions - 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  
+  plot(x, Y_hat[['0']]$predictions, ylim = range(u0, u1, l0, l1, 0, 1),
+       xlab = var, ylab = "Mean ICE", type = "l", col = 'blue', lwd = 2)
+  lines(x, u0, lty = 2, col ='blue')
+  lines(x, l0, lty = 2, col ='blue')
+  
+  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, u1, lty = 2, col ='red')
+  lines(x, l1, lty = 2, col ='red')
+dev.off()
+
+
+png(file='ICE_mean.png', bg = "transparent")
+var = 'S3'
+x = get_var_xs(X = X_test, var = var, l = 7)
+  
+  u0 = Y_hat[['0']]$predictions + 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  l0 = Y_hat[['0']]$predictions - 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  u1 = Y_hat[['1']]$predictions + 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  l1 = Y_hat[['1']]$predictions - 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  
+  plot(x, Y_hat[['0']]$predictions - Y_hat[['1']]$predictions , ylim = range(u0 - u1, l0 - l1),
+       xlab = var, ylab = "Mean ICE", type = "l", col = 'blue', lwd = 2)
+  
+  lines(x, u0 - u1, lty = 2, col ='blue')
+  lines(x, l0 - l1, lty = 2, col ='red')
+  
+  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, u1, lty = 2, col ='red')
+  lines(x, l1, lty = 2, col ='red')
+dev.off()
+
+
+
+
+
+# train --------------------------------------------------------------------
+
+
+plan(multisession) ## Run in parallel on local computer
+Y_hats = future_lapply(1:nrow(X), function(i) {
+  get_Y_hat_for_var(
+    regRF = regRF,
+    var = 'S3',
+    i = i,
+    X = X,
+    l = 7,
+    comp_variance = TRUE
+  )},
+  future.packages	= c('grf')
+)
+save(Y_hats, file = 'ICE_mean_train.Rdata')
+
+Y_hat_predictions = list()
+Y_hat = list()
+for(w in unique(W_test)){
+  Y_hat[[as.character(w)]] = data.frame(
+    predictions = apply(sapply(Y_hats[W == w], function(x) x$predictions), 1, median),
+    variance.estimates = apply(sapply(Y_hats[W == w], function(x) x$variance.estimates), 1, median)
+  )
+  Y_hat_predictions[[as.character(w)]] = sapply(Y_hats[W == w], function(x) x$predictions)
+}
+
+png(file='ICE_mean_train.png', bg = "transparent")
+  var = 'S3'
+  x = get_var_xs(X = X_test, var = var, l = 7)
+  
+  u0 = Y_hat[['0']]$predictions + 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  l0 = Y_hat[['0']]$predictions - 1.96 * sqrt(Y_hat[['0']]$variance.estimates)
+  u1 = Y_hat[['1']]$predictions + 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  l1 = Y_hat[['1']]$predictions - 1.96 * sqrt(Y_hat[['1']]$variance.estimates)
+  
+  plot(x, Y_hat[['0']]$predictions, ylim = range(u0, u1, l0, l1, 0, 1),
+       xlab = var, ylab = "Mean ICE", type = "l", col = 'blue', lwd = 2)
+  lines(x, u0, lty = 2, col ='blue')
+  lines(x, l0, lty = 2, col ='blue')
+  
+  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, u1, lty = 2, col ='red')
+  lines(x, l1, lty = 2, col ='red')
+dev.off()
+
+
+png(file='ICE_mean_train.png', bg = "transparent")
+  plot(x, Y_hat[['0']]$predictions - Y_hat[['1']]$predictions , ylim = range(u0 - u1, l0 - l1),
+       xlab = var, ylab = "Mean ICE", type = "l", col = 'blue', lwd = 2)
+  lines(x, u0 - u1, lty = 2, col ='blue')
+  lines(x, l0 - l1, lty = 2, col ='red')
+  
+  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, u1, lty = 2, col ='red')
+  lines(x, l1, lty = 2, col ='red')
 dev.off()
