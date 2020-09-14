@@ -1,10 +1,10 @@
 # Example based on 
 # https://github.com/grf-labs/grf/tree/master/experiments/
 
-set.seed(1)
+set.seed(42)
 rm(list = ls())
 libraries = c('grf', 'pROC', 'caret', 'future.apply', 'Hmisc',
-              'lmtest', 'ggplot2', 'glue')
+              'lmtest', 'ggplot2', 'glue', 'moments')
 lapply(libraries,function(x)if(!(x %in% installed.packages())){
   install.packages(x)})
 lapply(libraries, library, quietly = TRUE, character.only = TRUE)
@@ -63,30 +63,67 @@ X = cbind(X.raw[,-which(names(X.raw) %in% c("C1", "XC"))], C1.exp, XC.exp)
 X_test = X[-trainIndex,]
 X = X[trainIndex,]
 
-# regression forest -------------------------------------------------------
+# OLS regression ----------------------------------------------------------
+model <- lm(Y ~ ., data = cbind(X, W))
+Y_hat = predict(model)
+
+sink_on()
+print('linear regression')
+summary(model)
+print(glue::glue("MSE: {mean((Y_hat - Y)**2)}"))
+print(glue::glue("rsq: {round(rsq(Y,Y_hat),4)}"))
+print(glue::glue("rsq_adj: {round(rsq_adj(Y,Y_hat, model$rank),4)}"))
+sink_off()
+
+Y_test_hat = predict(model, newdata = cbind(X_test, W=W_test))
+sink_on()
+print('Test:')
+print(glue::glue("MSE: {mean((Y_test_hat - Y_test)**2)}"))
+print(glue::glue("rsq: {round(rsq(Y_test, Y_test_hat),4)}"))
+print(glue::glue("rsq: {round(rsq_adj(Y_test, Y_test_hat, model$rank),4)}"))
+sink_off()
+
+# quantile causal forest -------------------------------------------------------
 sink_on()
 print('')
 print('quantile RF:')
-
-qs = c(0.05, 0.25, 0.5, 0.75, 0.95)
-qRF <- quantile_forest(
-  X = cbind(X, W), Y = Y,
-  num.trees = 200, quantiles = qs
-)
-print(qRF)
-x = variable_importance(qRF, max.depth = 50)
-row.names(x) = colnames(X)
-print(round(x,4))
-Y_hat = predict(qRF)
-
+qRF <- quantile_forest(X = X, Y = Y, quantiles = c(0.1, 0.25, 0.5, 0.75, 0.9),
+                       num.trees = 2000)
 save(qRF, file = 'quantile_forest.Rdata')
+rf = qRF
+print(rf)
+x = variable_importance(rf, max.depth = 50)
+row.names(x) = colnames(X)
+print(round(x[order(x, decreasing = TRUE),],4))
+
+# print('propensity score RF:')
+# propensityRF <- regression_forest(X = X, Y = W, tune.parameters = 'all', num.trees = 2000)
+# roc = pROC::roc(W, propensityRF$predictions[,1])
+# plot(roc)
+
+print('causal RFs:')
+cRFs = list()
+for(q in qRF$quantiles.orig){
+  cRF <- causal_forest(X = X, W = W, Y = Y,
+                       Y.hat = predict(qRF, quantile = q)[,1],
+                       tune.parameters = 'all', num.trees = 2000)
+  cRFs[[as.character(q)]] = cRF
+}
+save(cRFs, file = 'causal_forests.Rdata')
+rf = cRF[['0.5']]
+print(rf)
+x = variable_importance(rf, max.depth = 50)
+row.names(x) = colnames(X)
+print(round(x[order(x, decreasing = TRUE),],4))
+
 
 # get_Y_hat function ------------------------------------------------------
 get_var_xs = function(X, var, l = 100){
   return(seq(min(X[,var]), max(X[,var]), length.out = l))
 }
-get_Y_hat_for_var = function(qRF = qRF, var, i = NULL,
-                             comp_variance = TRUE, X = X, l =100){
+get_Y_hat_for_var = function(regRF = regRF, var, i = NULL,
+                             comp_variance = TRUE, X = X, l = 100,
+                             cRF = NULL, q = 0.05){
   x = get_var_xs(X = X, var = var, l=l)
   X2 = data.frame(x)
   # X2 = data.frame(seq(-1, 1, length.out = 100))
@@ -100,73 +137,109 @@ get_Y_hat_for_var = function(qRF = qRF, var, i = NULL,
   X2[, 2:(length(X_fill) + 1)] = X_fill
   colnames(X2)[2:ncol(X2)] = names(X_fill)
   
-  Y_hat = predict(qRF, X2, estimate.variance = comp_variance)
+  Y_hat = data.frame(predict(regRF, X2, quantile = q))
+  colnames(Y_hat) = 'predictions'
+  if(!is.null(cRF)){
+    # Y_hat = cbind(
+    #   Y_hat, 
+    #   'treatment_effect' =  predict(cRF, X2, quantile = q)$predictions
+    # )
+    Y_hat[, 'treatment_effect'] = predict(cRF, X2, quantile = q)
+  }
   return(Y_hat)
 }
 
-# ICE (Individual Conditional Expectation) --------------------------------
-var = 'S3'
-Y_hat = get_Y_hat_for_var(
-  qRF = qRF, var = var, i = 2,
-  comp_variance = TRUE, X = cbind(X_test, W = W_test), l = 7
+# Plot settings -----------------------------------------------------------
+settings = data.frame(
+  'q' = qRF$quantiles.orig,
+  'lty' = c(3, 2, 1, 2, 3),
+  'col' = 'blue',
+  'w' = 0,
+  stringsAsFactors = FALSE
 )
-get_var_xs(X = cbind(X_test, W = W_test), var=var)
-save(Y_hat, file = 'ICE_one.Rdata')
-png(file='ICE_one.png', bg = 'transparent')
+settings2 = settings 
+settings2$col = 'red'
+settings2$w = 1
+ps = rbind(settings, settings2)
+
+# ICQ (Individual Conditional Quantile) --------------------------------
+var = 'S3'
+Y_hat = list()
+for(q in qRF$quantiles.orig){
+  Y_hat[[as.character(q)]] = get_Y_hat_for_var(
+    regRF = qRF, var = var, i = 2,
+    comp_variance = TRUE, X = X_test, l = 7,
+    q = q,  cRF = cRFs[[as.character(q)]]
+  )
+}
+save(Y_hat, file = 'ICQ_one.Rdata')
+
+png(file='ICQ_one.png', bg = 'transparent')
+  mu = max(sapply(Y_hat, function(x) max(x$predictions + x$treatment_effect)))
+  ml = min(sapply(Y_hat, function(x) min(x$predictions)))
   x = get_var_xs(X = X_test, var = var, l = 7)
-  plot(x, Y_hat[,1],
-       xlab = var, ylab = "ICE", type = "l", col = 'blue', lwd = 2,
-       # ylim = range(Y_hat$predictions, 0, 1),
-       ylim = c(min(ci_l), max(ci_u))
-       )
-lines(x, ci_u, lty = 2, col ='blue')
-lines(x, ci_l, lty = 2, col ='blue')
+  plot(x, Y_hat[['0.5']]$predictions, xlab = var, ylab = "ICQ", type = "n", ylim = c(ml, mu))
+  for(i in 1:nrow(ps)){
+    lines(
+      x = x, 
+      y = Y_hat[[as.character(ps[i, 'q'])]]$predictions + ps[i, 'w'] * Y_hat[[as.character(ps[i, 'q'])]]$treatment_effect,
+      lwd = 2,
+      lty = ps[i, 'lty'],
+      col = ps[i, 'col']
+    )
+  }
 dev.off()
-# Mean ICE ----------------------------------------------------------------
+# Mean/Median/SD/... ICQ ----------------------------------------------------------------
 
 plan(multisession) ## Run in parallel on local computer
-nrow(X_test)
-Y_hats = future_lapply(1:nrow(X_test), function(i) {
-  get_Y_hat_for_var(
-    qRF = qRF,
-    var = 'S3',
-    i = i,
-    X = cbind(X_test, W=W_test),
-    l = 7,
-    comp_variance = TRUE
-  )},
-  future.packages	= c('grf')
-)
-save(Y_hats, file = 'ICE_mean_test.Rdata')
-
-# plan(multisession) ## Run in parallel on local computer
-# Y_hats = future_lapply(1:nrow(X), function(i) {
-#   get_Y_hat_for_var(
-#     qRF = qRF,
-#     var = 'ratio001',
-#     i = i,
-#     X = X,
-#     comp_variance = TRUE
-#   )},
-#   future.packages	= c('grf')
-# )
-# save(Y_hats, file = 'ICE_mean_train.Rdata')
-
-Y_hat = data.frame(
-  predictions = apply(sapply(Y_hats, function(x) x[, 1]), 1, median),
-  variance.estimates = apply(sapply(Y_hats, function(x) x[, 2]), 1, median)
-)
-Y_hat_predictions = sapply(Y_hats, function(x) x[,1])
-
-png(file='ICE_mean.png', bg = "transparent")
-var = 'S3'
-x = get_var_xs(X = X_test, var = var, l = 7)
-plot(x, Y_hat_predictions[,1], ylim = range(Y_hat_predictions, 0, 1), 
-     xlab = var, ylab = "Mean ICE", type = "l", col = 'grey', lwd = 0.25)
-for(i in 2:min(ncol(Y_hat_predictions), 50000)){
-  lines(x, Y_hat_predictions[, i], col='grey', lwd = 0.5)
+Y_hats = list()
+for(q in qRF$quantiles.orig){
+  Y_hats[[as.character(q)]] = future_lapply(1:nrow(X_test), function(i) {
+    get_Y_hat_for_var(
+      regRF = qRF,
+      var = var,
+      i = i,
+      X = X_test,
+      l = 7,
+      comp_variance = TRUE,
+      q = q,
+      cRF = cRFs[[as.character(q)]]
+    )},
+    future.packages	= c('grf')
+  )
 }
-lines(x, Y_hat$predictions, col='blue', lwd = 2)
-lines(x, Y_hat$predictions + 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
-lines(x, Y_hat$predictions - 1.96 * sqrt(Y_hat$variance.estimates), lty = 2, col ='blue')
-dev.off()
+save(Y_hats, file = 'ICQ_test.Rdata')
+
+Y_hat = function(fun = mean){
+  Y_hat = list()
+  for(w in unique(W_test)){
+    Y_hat[[as.character(w)]] = lapply(
+      Y_hats, 
+      function(x) apply(
+        sapply(x, function(xx) {xx$predictions + w * xx$treatment_effect}),
+        MARGIN = 1,
+        FUN = fun
+      )
+    )
+  }
+  return(Y_hat)
+}
+
+for (fun in c('mean', 'median', 'sd', 'skewness', 'kurtosis')){
+  png(file=glue('ICQ_{fun}.png'), bg = "transparent")
+    tmp_Y_hat = Y_hat(fun)
+    var = 'S3'
+    ylim = range(unlist(tmp_Y_hat))
+    x = get_var_xs(X = X_test, var = var, l = 7)
+    plot(x, tmp_Y_hat[['0']][['0.5']], xlab = var, ylab = glue("{fun} ICQ"), type = "n", ylim = ylim)
+    for(i in 1:nrow(ps)){
+      lines(
+        x = x, 
+        y = tmp_Y_hat[[as.character(ps[i, 'w'])]][[as.character(ps[i, 'q'])]],
+        lwd = 2,
+        lty = ps[i, 'lty'],
+        col = ps[i, 'col']
+      )
+    }
+  dev.off()
+}
