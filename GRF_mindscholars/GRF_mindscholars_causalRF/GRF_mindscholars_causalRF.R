@@ -220,7 +220,7 @@ png(file='ICE_mean.png', bg = "transparent")
   lines(x, u0, lty = 2, col ='blue')
   lines(x, l0, lty = 2, col ='blue')
   
-  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, Y_hat[['1']]$predictions, col ='red', lwd = 2)
   lines(x, u1, lty = 2, col ='red')
   lines(x, l1, lty = 2, col ='red')
 dev.off()
