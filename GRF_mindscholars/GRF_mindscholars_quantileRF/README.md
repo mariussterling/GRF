@@ -20,18 +20,19 @@ See also: ''
 Submitted:  '31.08.2020'
 
 ```
+![Picture4](ICQ_one.png)
 
-![Picture1](ICQ_kurtosis.png)
+
 
 ![Picture2](ICQ_mean.png)
 
 ![Picture3](ICQ_median.png)
 
-![Picture4](ICQ_one.png)
-
 ![Picture5](ICQ_sd.png)
 
 ![Picture6](ICQ_skewness.png)
+
+![Picture1](ICQ_kurtosis.png)
 
 ### R Code
 ```r
