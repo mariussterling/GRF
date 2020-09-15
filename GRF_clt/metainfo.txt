@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_clt_parameter
+
+Published in: 'METIS'
+
+Description: 'Visualisation of c and beta_min dependent on least fraction omega and minimum bound for probability that specific feature is used as analysis for the behaviour of central limit theorem (CLT) of GRF.'
+
+Keywords: 'visualisation, parameter, CLT, GRF, central limit theorem, RF'
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '14.09.2020'
