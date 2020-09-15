@@ -64,7 +64,7 @@ X_test = X[-trainIndex,]
 X = X[trainIndex,]
 
 # OLS regression ----------------------------------------------------------
-model <- lm(Y ~ ., data = cbind(X, W))
+model <- lm(Y ~ ., data = X)
 Y_hat = predict(model)
 
 sink_on()
@@ -75,7 +75,7 @@ print(glue::glue("rsq: {round(rsq(Y,Y_hat),4)}"))
 print(glue::glue("rsq_adj: {round(rsq_adj(Y,Y_hat, model$rank),4)}"))
 sink_off()
 
-Y_test_hat = predict(model, newdata = cbind(X_test, W=W_test))
+Y_test_hat = predict(model, newdata = X_test)
 sink_on()
 print('Test:')
 print(glue::glue("MSE: {mean((Y_test_hat - Y_test)**2)}"))
@@ -220,7 +220,7 @@ png(file='ICE_mean.png', bg = "transparent")
   lines(x, u0, lty = 2, col ='blue')
   lines(x, l0, lty = 2, col ='blue')
   
-  lines(x, Y_hat[['1']]$predictions, col ='red')
+  lines(x, Y_hat[['1']]$predictions, col ='red', lwd = 2)
   lines(x, u1, lty = 2, col ='red')
   lines(x, l1, lty = 2, col ='red')
 dev.off()
