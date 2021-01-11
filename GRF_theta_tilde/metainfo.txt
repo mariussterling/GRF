@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_theta_tilde
+
+Published in: 'GRF'
+
+Description: 'Estimation of infeasable observations of theta_tilde, based on given theta (generally unknown) and effective weights (alpha) of (generalized) random forest.'
+
+Keywords: 'RF, GRF, infeasable function, estimation, density'
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '11.01.2021'
