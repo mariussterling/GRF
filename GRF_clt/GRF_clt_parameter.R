@@ -1,5 +1,3 @@
-library(glue)
-
 c_func = function(w, pi) {
   return(pi * log(1 - w) / log(w) / 2)
 }
