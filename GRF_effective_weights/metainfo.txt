@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_effective_weights
+
+Published in: 'GRF'
+
+Description: 'Estimation of effective weights alpha_i(x) for the infeasable observations theta_tilde. The effective weights are computed by a regression forest on n=500, 1000, 2000 observations of grid data x_i = -1 + 2*i/n and target variable Y_i=theta(x_i) + eps_i, for a given theta function, here triangle function theta(x) = max(0, 1 - |x|/0.2), with Gaussian noise eps_i with mean zero and standard deviation of 0 and 0.1.'
+
+Keywords: 'RF, GRF, infeasable function, estimation, effective weights, bandwidth'
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '15.01.2021'
