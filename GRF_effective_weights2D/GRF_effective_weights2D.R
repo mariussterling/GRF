@@ -7,13 +7,14 @@ library(NNTbiomarker)
 set.seed(42)
 
 
+# Function definition for data --------------------------------------------
 get_x = function(n, seed=NULL){
   set.seed(seed)
   X = data.frame(matrix(
     c(
       seq(-0.5, 0.5, length.out = n),
       round(runif(n = n, min = -0.5, max = 0.5), 3)
-    ),
+      ),
     nrow = n,
     ncol = 2
   ))
@@ -38,6 +39,8 @@ get_y = function(X, theta, sigma, seed=NULL){
   return(theta(X) + rnorm(n, 0, sigma))
 }
 
+
+# Computing ---------------------------------------------------------------
 for (sig in c(0, 0.1)){
   rfs = list()
   for (n in c(500, 1000, 2000)){
@@ -68,8 +71,7 @@ for (sig in c(0, 0.1)){
       'n{formatC(n, width=4, flag="0")}_scatter',
       '.png'
     )
-    ggsave(fn, plot = p)
-    
+    ggsave(fn, plot = p, dpi = 300)
   }
   
   x1s = get_x_grid(101)
@@ -110,10 +112,8 @@ for (sig in c(0, 0.1)){
           colour = 'red',
           size = 3
         )
-      png(fn)
-      print(p)
-      dev.off()
-      ggsave(fn, plot = p)
+      
+      ggsave(fn, plot = p, dpi = 300)
       fn = glue(
         'contour/',
         'RF_theta_triangle___effective_weights___',
@@ -123,17 +123,20 @@ for (sig in c(0, 0.1)){
         'x_{formatC(x1*100, width=3, flag="0")}_{formatC(x2*100, width=3, flag="0")}',
         '.png'
        )
+      
+      breaks = c(seq(0, 0.07, 0.01), round(alpha_max, 2))
       contour = tibble(cbind(x1s, alpha = alpha[[as.character(n)]][, id])) %>%
         ggplot(aes(X1, X2, z = alpha)) +
         geom_contour_filled(
           aes(fill = stat(level)),
-          breaks = seq(0, 0.1, 0.01)
+          breaks = breaks,
         ) +
         scale_fill_brewer(
           name = c(expression(alpha[i](x[1], x[2]))),
           palette = 'Blues',
           direction = 1,
-          guide = 'legend'
+          guide = 'legend',
+          drop = FALSE
         ) +
         theme_bw() +
         theme(
@@ -149,8 +152,9 @@ for (sig in c(0, 0.1)){
           colour = 'red',
           size = 2
         )
-      contour
-      ggsave(fn, plot = contour)
+      ggsave(fn, plot = contour, dpi = 300)
     }
   }
 }
+
+# https://ostechnix.com/create-video-pdf-files-linux/
