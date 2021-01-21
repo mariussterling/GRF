@@ -127,7 +127,7 @@ for (sig in c(0, 0.1)){
         '.png'
        )
       
-      breaks = c(seq(0, 0.07, 0.01), round(alpha_max, 2))
+      breaks = c(0, 0.001, 0.005, 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, round(alpha_max, 3))
       contour = cbind(rf_X.orig[[as.character(n)]], alpha = alpha[[as.character(n)]][, id]) %>%
         ggplot(aes(X1, X2, z = alpha)) +
         geom_contour_filled(
