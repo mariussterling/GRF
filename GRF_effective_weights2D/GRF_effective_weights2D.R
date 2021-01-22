@@ -159,5 +159,3 @@ for (sig in c(0, 0.1)){
     }
   }
 }
-
-# https://ostechnix.com/create-video-pdf-files-linux/
