@@ -37,7 +37,7 @@ V_func  = function(x, mu, sig, clip = NULL){
 
 tau = c(0.5)
 sig = 1
-theta =  0.05
+theta =  0.97
 c = 1
 bootstraps = 100
 
