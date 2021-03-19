@@ -1,0 +1,14 @@
+
+Name of Quantlet: GRF_effective_weights_bootstrap
+
+Published in: 'GRF'
+
+Description: 'Estimation of effective weights alpha_i(x) for the infeasable observations theta_tilde. The effective weights are computed by a quantile random forest on n=500, 1000, 2000 observations of for the location model, for a given theta function, with Gaussian noise eps_i with mean zero and standard deviation of 1. A test statistic is calculated using the multiplier bootstrap technique '
+
+Keywords: 'RF, GRF, quantile RF, infeasable function, estimation, effective weights, bandwidth'
+
+Author: 'Kainat Khowaja
+
+See also: ''
+
+Submitted:  '18.03.2021'
