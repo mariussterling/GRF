@@ -37,40 +37,41 @@ V_func  = function(x, mu, sig, clip = NULL){
 
 tau = c(0.5)
 sig = 1
-theta =  0.97
+theta =  0.1
 c = 1
 bootstraps = 100
 
 rfs = list()
 T_stats = list()
-for ( n in c(500, 1000)){
+for ( n in c(500,1000)){
   T_stat = list()
   i = 1
   for (i in c(seq(1,bootstraps,1))){
     X = get_x(n, c)
     Y = get_y(n, theta, sig, 42)
     rfs[[as.character(n)]] = rf = grf::quantile_forest(X, Y, quantiles = tau)
-    alpha = get_sample_weights(rf)
+    w = get_sample_weights(rf)
+    alpha = as.vector(w[1,]) # extracting 1st column of ws as vector
     ##theta_tilde = theta(X) + alpha %*% eps_tilde(X, Y, theta, sig, tau)
-    objective_fun = function(theta,Y,alpha,tau)  drop(t((Y-theta)) %*% as.matrix(alpha) %*% (tau -   (Y <= theta))) #using drop to change matrix to scalar
+    objective_fun = function(theta,Y,alpha,tau)  sum(((Y-theta)) * as.matrix(alpha) * (tau -   (Y <= theta)))
     theta_hat = optimize(f=objective_fun,interval = c(0,1), tol = 0.0001, Y=Y, alpha=alpha, tau=tau)
     theta_hat = unlist(theta_hat[1])
     kde = density(Y, n=n) #estimation of the density
     f_Y= unlist(approx(kde$x, kde$y, xout = c(theta_hat))[2]) #evaluation of density at theta_hat
     V_hat = - f_Y^(-1) #V funtion
-    H_hat = drop(var((as.matrix(alpha) %*% (tau -   (Y <= theta_hat)))))
+    H_hat = abs((sum(alpha * (tau -   (Y <= theta_hat)))))
     e_multipliers = rnorm(n, 0, 1)
-    T_star = -drop(H_hat^(-1/2) %*% t((tau-(Y <= theta_hat))) %*% as.matrix(alpha) %*% e_multipliers)
+    T_star = -(H_hat^(-1/2)) * sum((tau-(Y <= theta_hat)) * alpha * e_multipliers)
     T_stat[[i]] = T_star
     
     ## uncomment this for true theta setting
-    'X = get_x(n, c)
+'    X = get_x(n, c)
     Y = get_y(n, theta, sig, 42)
-    alpha = matrix(sort(rep(1/n, n)), nrow = n, ncol=n)
+    alpha = matrix(sort(rep(1/n, n)), nrow = n)
     theta_hat=theta
-    H_hat = var(tau -   (Y <= theta_hat)) /n
+    H_hat = max(0.000001,abs((sum(alpha * (tau -   (Y <= theta_hat))))))
     e_multipliers = rnorm(n, 0, 1)
-    T_star = -drop(H_hat^(-1/2) %*% t((tau-(Y <= theta_hat)) %*% as.matrix(alpha) %*% e_multipliers))
+    T_star = -sum((H_hat^(-1/2) *((tau-(Y <= theta_hat)) * as.matrix(alpha)* e_multipliers)))
     T_stat[[i]] = T_star'
   }
   T_stats[[as.character(n)]]  = T_stat
@@ -79,8 +80,6 @@ for ( n in c(500, 1000)){
 
   fn = glue(
     'qRF_location_',
-    'true__',
-    'theta_hat___',
     'q{formatC(tau*100, width=3, flag="0")}___',
     'sigma{formatC(sig*100, width=3, flag="0")}___',
     'theta{formatC(theta*100, width=3, flag="0")}___',
@@ -90,7 +89,7 @@ for ( n in c(500, 1000)){
   )
   
   png(file = fn)
-  plot(d, ylab='', xlab='', main="Density plot of bootsrap test statistic")
+  plot(d, ylab='', xlab='', ylim = c(0,1), main="Density plot of bootsrap test statistic")
   x_std = rnorm(n, mean = 0, sd= 1)
   std_d = density(x_std, n=bootstraps)
   lines(std_d, col = 'blue')
