@@ -37,7 +37,7 @@ V_func  = function(x, mu, sig, clip = NULL){
 
 tau = c(0.5)
 sig = 1
-theta =  0.1
+theta =  0.9
 c = 1
 bootstraps = 100
 
@@ -46,6 +46,7 @@ T_stats = list()
 for ( n in c(500,1000)){
   T_stat = list()
   i = 1
+  set.seed(100)
   for (i in c(seq(1,bootstraps,1))){
     X = get_x(n, c)
     Y = get_y(n, theta, sig, 42)
@@ -59,7 +60,8 @@ for ( n in c(500,1000)){
     kde = density(Y, n=n) #estimation of the density
     f_Y= unlist(approx(kde$x, kde$y, xout = c(theta_hat))[2]) #evaluation of density at theta_hat
     V_hat = - f_Y^(-1) #V funtion
-    H_hat = abs((sum(alpha * (tau -   (Y <= theta_hat)))))
+    H_hat = sum(alpha^2 * var((tau -   (Y <= theta_hat))))
+    H_hat_1 = n *((var(alpha * (tau -   (Y <= theta_hat))))) #alternative way of calculating H_hat
     e_multipliers = rnorm(n, 0, 1)
     T_star = -(H_hat^(-1/2)) * sum((tau-(Y <= theta_hat)) * alpha * e_multipliers)
     T_stat[[i]] = T_star
@@ -81,6 +83,7 @@ for ( n in c(500,1000)){
   fn = glue(
     'qRF_location_',
     'q{formatC(tau*100, width=3, flag="0")}___',
+    'new_var',
     'sigma{formatC(sig*100, width=3, flag="0")}___',
     'theta{formatC(theta*100, width=3, flag="0")}___',
     'n{formatC(as.integer(n), width=4, flag="0")}___',
@@ -89,7 +92,8 @@ for ( n in c(500,1000)){
   )
   
   png(file = fn)
-  plot(d, ylab='', xlab='', ylim = c(0,1), main="Density plot of bootsrap test statistic")
+  plot(d, ylab='', xlab='',ylim = c(0,0.45), main="Density plot of bootsrap test statistic")
+  #ylim = c(0,1),
   x_std = rnorm(n, mean = 0, sd= 1)
   std_d = density(x_std, n=bootstraps)
   lines(std_d, col = 'blue')
