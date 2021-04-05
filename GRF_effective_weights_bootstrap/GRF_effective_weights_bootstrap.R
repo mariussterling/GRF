@@ -43,6 +43,7 @@ bootstraps = 100
 
 rfs = list()
 T_stats = list()
+CIs = list()
 for ( n in c(500,1000)){
   T_stat = list()
   i = 1
@@ -66,6 +67,17 @@ for ( n in c(500,1000)){
     T_star = -(H_hat^(-1/2)) * sum((tau-(Y <= theta_hat)) * alpha * e_multipliers)
     T_stat[[i]] = T_star
     
+    
+    ## Confidence interval
+    sigma_hat = f_Y^(-2)*H_hat
+    alpha_sig = 0.05
+    T_stat_abs = abs(unlist(T_stat, use.names=FALSE))
+    q_star = quantile(T_stat_abs, 1-alpha_sig)
+    CI = c(theta_hat-q_star*sigma_hat, theta_hat+q_star*sigma_hat)
+    
+    
+    
+    
     ## uncomment this for true theta setting
 '    X = get_x(n, c)
     Y = get_y(n, theta, sig, 42)
@@ -77,6 +89,7 @@ for ( n in c(500,1000)){
     T_stat[[i]] = T_star'
   }
   T_stats[[as.character(n)]]  = T_stat
+  CIs[[as.character(n)]]  = CI
   d = density(unlist(T_stat), n=bootstraps)
   #d_norm = dnorm(unlist(T_stat))
 
