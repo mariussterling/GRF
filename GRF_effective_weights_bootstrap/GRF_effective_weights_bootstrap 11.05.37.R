@@ -38,18 +38,23 @@ V_func  = function(x, mu, sig, clip = NULL){
 
 tau = c(0.5)
 sig = 1
-theta =  0.9
+#theta =  0
 c = 1
 b = 100 #number of bootstraps for MBS
 reps = 100 #repititions for confidence interval
+
 
 rfs = list()
 T_stats = list()
 CIs = list()
 CIs_std = list()
-for ( n in c(500,1000)){
+power_curve = list()
+power_curve_std = list()
+
+k = 1
+for (theta in c(seq(0.05,1,0.05))) {
+for ( n in c(500)){
   T_stat = list()
-  i = 1
   set.seed(100)
   ptm <- proc.time()
   X = get_x(n, c, reps)
@@ -83,22 +88,23 @@ for ( n in c(500,1000)){
   CI_std = do.call("cbind",CI_std)
   print(proc.time() - ptm)
   # counting the number of times intervals cover the theta
-  count = 0 #counting coverage of CI
+  h0= 0 #theta_0 under null hyp
+  count = 0 #counting coverage of CI # count increased when null hypothesis not rejected because theta_0 under null hyp is contained in the interval
   count_std = 0 #counting covergae of std normal CI
   for (i in c(seq(1,reps,1))){
-    if ((theta > CI[i,1]) & (theta < CI[i,2])  )
+    if ((h0 > CI[i,1]) & (h0 < CI[i,2])  )
       count = count + 1
-    if ((theta > CI_std[i,1]) & (theta < CI_std[i,2])  )
+    if ((h0 > CI_std[i,1]) & (h0 < CI_std[i,2])  )
       count_std = count_std + 1
   }
   print(count)
   print(count_std)
-  
+
   T_stats[[as.character(n)]]  = T_stat
   CIs[[as.character(n)]]  = CI
   CIs_std[[as.character(n)]]  = CI_std
   d = density(unlist(T_stat[1,]), n=b)
-  
+
   fn = glue(
     'qRF_location_',
     'q{formatC(tau*100, width=3, flag="0")}___',
@@ -109,30 +115,40 @@ for ( n in c(500,1000)){
     'bs{formatC(as.integer(b), width=4, flag="0")}',
     '.png'
   )
-  
+
   png(file = fn)
-  
+
   plot(d, ylab='', xlab='',ylim = c(0,0.45), main="Density plot of bootsrap test statistic")
   ylim = c(0,1)
   x_std = rnorm(n, mean = 0, sd= 1)
   std_d = density(x_std, n=b)
   lines(std_d, col = 'blue')
   dev.off()
-  
-  png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','.png'))
-  
+
+  png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
+
   plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2]), col='black', main="Confidence intervals")
   lines(as.matrix(theta_hat), col='green')
   lines(CI[,1], col='red', lty=2)
   lines(CI[,2], col='red', lty=2)
   dev.off()
-  
-  png(file = glue('CI_std_','n{formatC(as.integer(n), width=4, flag="0")}_','.png'))
-  
+
+  png(file = glue('CI_std_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
+
   plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2]), col='black', main="Std Confidence intervals")
   lines(as.matrix(theta_hat), col='green')
   lines(CI_std[,1], col='red', lty=2)
   lines(CI_std[,2], col='red', lty=2)
   dev.off()
 }
+  power_curve[k] = (reps- count)/100
+  power_curve_std[k] = (reps- count_std)/100
+  print(k)
+  k = k+1
 
+}  
+
+png(file = glue('power_curve_','n{formatC(as.integer(n), width=4, flag="0")}_','.png'),  width=1400, height=1400, res=300)
+plot(c(seq(0.05,1,0.05)), power_curve, type= 'l', xlab = bquote(theta), ylab = 'Power', ylim = c(0,1))
+lines(c(seq(0.05,1,0.05)),power_curve_std, col='blue')
+dev.off()
