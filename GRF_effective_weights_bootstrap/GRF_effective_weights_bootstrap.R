@@ -39,6 +39,8 @@ V_func  = function(x, mu, sig, clip = NULL){
 tau = c(0.5)
 sig = 1
 #theta =  0
+#theta = c(seq(0.05,1,0.05))
+theta = 0.9
 c = 1
 b = 100 #number of bootstraps for MBS
 reps = 100 #repititions for confidence interval
@@ -52,8 +54,8 @@ power_curve = list()
 power_curve_std = list()
 
 k = 1
-for (theta in c(seq(0.05,1,0.05))) {
-for ( n in c(500)){
+for (theta in theta) {
+for ( n in c(500, 1000)){
   T_stat = list()
   set.seed(100)
   ptm <- proc.time()
@@ -127,19 +129,22 @@ for ( n in c(500)){
 
   png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
 
-  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2]), col='black', main="Confidence intervals")
+  
+  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red', main="Confidence intervals")
   lines(as.matrix(theta_hat), col='green')
-  lines(CI[,1], col='red', lty=2)
-  lines(CI[,2], col='red', lty=2)
+  lines(CI[,1], col='black')
+  lines(CI[,2], col='black')
+  lines(CI_std[,1], col='blue')
+  lines(CI_std[,2], col='blue')
   dev.off()
 
-  png(file = glue('CI_std_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
-
-  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2]), col='black', main="Std Confidence intervals")
-  lines(as.matrix(theta_hat), col='green')
-  lines(CI_std[,1], col='red', lty=2)
-  lines(CI_std[,2], col='red', lty=2)
-  dev.off()
+  # png(file = glue('CI_std_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
+  # 
+  # plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI_std[,1], CI_std[,2]), col='black', main="Std Confidence intervals")
+  # lines(as.matrix(theta_hat), col='green')
+  # lines(CI_std[,1], col='red', lty=2)
+  # lines(CI_std[,2], col='red', lty=2)
+  # dev.off()
 }
   power_curve[k] = (reps- count)/100
   power_curve_std[k] = (reps- count_std)/100
@@ -148,7 +153,9 @@ for ( n in c(500)){
 
 }  
 
+## only create power curve when a series of true parameters is provided
+if (length(theta) >1){
 png(file = glue('power_curve_','n{formatC(as.integer(n), width=4, flag="0")}_','.png'),  width=1400, height=1400, res=300)
 plot(c(seq(0.05,1,0.05)), power_curve, type= 'l', xlab = bquote(theta), ylab = 'Power', ylim = c(0,1))
 lines(c(seq(0.05,1,0.05)),power_curve_std, col='blue')
-dev.off()
+dev.off()}
