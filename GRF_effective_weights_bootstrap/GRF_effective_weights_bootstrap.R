@@ -55,7 +55,7 @@ power_curve_std = list()
 
 k = 1
 for (theta in theta) {
-for ( n in c(500, 1000)){
+for ( n in c(500,1000)){
   T_stat = list()
   set.seed(100)
   ptm <- proc.time()
@@ -79,8 +79,8 @@ for ( n in c(500, 1000)){
   
   ## Confidence interval with test stat
   alpha_sig = 0.05
-  T_stat_abs = sapply(1:ncol(X), function(j) abs((T_stat[j,])))
-  q_star = sapply(1:reps, function(j) quantile((T_stat_abs[j,]) , 1-alpha_sig))
+  T_stat_abs = sapply(1:ncol(X), function(j) abs((T_stat[,j])))
+  q_star = sapply(1:reps, function(j) quantile((T_stat_abs[,j]) , 1-alpha_sig))
   CI = list(unlist(theta_hat)-q_star*sigma_hat, unlist(theta_hat)+q_star*sigma_hat)
   CI = do.call("cbind",CI)
   
@@ -134,6 +134,7 @@ for ( n in c(500, 1000)){
   lines(as.matrix(theta_hat), col='green')
   lines(CI[,1], col='black')
   lines(CI[,2], col='black')
+  #polygon( c(CI[,1], rev(CI[,2])),col = "grey", border = NA)
   lines(CI_std[,1], col='blue')
   lines(CI_std[,2], col='blue')
   dev.off()

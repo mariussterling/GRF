@@ -7,6 +7,10 @@ library(NNTbiomarker)
 set.seed(42)
 
 
+# Getting the path of your current open file
+current_path = rstudioapi::getActiveDocumentContext()$path 
+setwd(dirname(current_path ))
+
 # Function definition for data --------------------------------------------
 get_x = function(n, seed=NULL){
   set.seed(seed)
@@ -47,12 +51,12 @@ get_y = function(X, theta, sigma, seed=NULL){
 # Computing ---------------------------------------------------------------
 for (sig in c(0, 0.1)){
   rfs = list()
-  for (nX1 in c(50, 100, 200)){
+  for (n in c(50, 100, 200)){
     width = 0.2
-    X = get_x(nX1, seed=42)
+    X = get_x(n, seed=42)
     theta = function(X) theta_triangle(X, width)
     Y = get_y(X, theta, sig, 42)
-    rfs[[as.character(nX1)]] = rf = regression_forest(X, Y)
+    rfs[[as.character(n)]] = rf = regression_forest(X, Y)
     eps_tilde = Y - theta(X)
     alpha = get_sample_weights(rf)
     theta_tilde = theta(X) + alpha %*% eps_tilde
@@ -71,7 +75,7 @@ for (sig in c(0, 0.1)){
       'scatter/',
       'RF_theta_triangle___theta_tilde___',
       'sigma{formatC(sig*100, width=3, flag="0")}___',
-      'n{formatC(nX1, width=3, flag="0")}_scatter',
+      'n{formatC(n, width=3, flag="0")}_scatter',
       '.png'
     )
     ggsave(fn, plot = p, dpi = 300)
