@@ -65,7 +65,6 @@ for ( n in c(50)){
   rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), quantile = 0.5)
   rf = lapply(1:reps, rand_for)
   w = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
-  alpha = lapply(1:reps, function(j) w[[j]][,1]) # extracting 1st column of ws as vector for 
   objective_fun = function(theta,Y,alpha) sum(((Y-theta)) * as.matrix(alpha) * (tau -   (Y <= theta)))
   theta_hat = lapply(1:reps, function(j) sapply(1:nrow(X), function(k)
     optimize(f=objective_fun,interval = c(0,1),
@@ -97,30 +96,6 @@ CIs[[as.character(n)]]  = CI
 
 # Plotting _______________________________________
 
-## plot with multiple confidence intervals 
-for (num in c(1,4)){
-  for (x2 in c(0.3,0.5)){
-    png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_',
-                    'reps{formatC(as.integer(num) ,flag="0")}_',
-                    'x2{formatC(x2*10, width=3 ,flag="0")}_',
-                    '.png'),
-        width=1500, height=1500)
-    
-    plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5), ylim= c(-0.25,1))
-    for (i in 1:num){
-      pd = data.frame(X1=X$X1,X2=X$X2, theta_hat =  unlist(theta_hat[[i]]),
-                      theta_true = theta_true, CI_L = CI[[i]][[1]], CI_U = CI[[i]][[2]] )
-      pd = pd[pd$X2==sprintf("%0.1f", x2),]
-      points(pd$X1, pd$theta_true ,
-             ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
-             col='red', main="Confidence intervals", pch=19, cex=2)
-      points(pd$X1, pd$theta_hat, col='blue', pch=19, cex=2)
-      lines(pd$X1, pd$CI_L,      col='black',pch = 19,  type = "b", lty = 2, cex=0.8)
-      lines(pd$X1, pd$CI_U,      col='black',pch = 19,  type = "b", lty = 2, cex=0.8)
-    }
-    dev.off()
-  }}
-
 ## plot with average confidence intervals
 avg_ci_lower = 0
 avg_ci_upper = 0
@@ -136,6 +111,7 @@ avg_theta_hat = avg_theta_hat/reps
 
 for (x2 in c(0.3,0.5)){
   png(file = glue('CI_averaged_','n{formatC(as.integer(n), width=4, flag="0")}_',
+                  'sig{formatC(sig*10, width=3 ,flag="0")}_',
                   'reps{formatC(as.integer(reps) ,flag="0")}_',
                   'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
@@ -154,3 +130,29 @@ for (x2 in c(0.3,0.5)){
   lines(pd$X1, pd$CI_U,      col='black',pch = 19,  type = "b", lty = 2, cex=0.8)
   dev.off()
 }
+
+## plot with multiple confidence intervals 
+for (num in c(1,4)){
+  for (x2 in c(0.3,0.5)){
+    png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_',
+                    'sig{formatC(sig*10, width=3 ,flag="0")}_',
+                    'reps{formatC(as.integer(num) ,flag="0")}_',
+                    'x2{formatC(x2*10, width=3 ,flag="0")}_',
+                    '.png'),
+        width=1500, height=1500)
+    
+    plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5),
+         ylim= range(pd$theta_true, pd$theta_hat, pd$CI_L, pd$CI_U))
+    for (i in 1:num){
+      pd = data.frame(X1=X$X1,X2=X$X2, theta_hat =  unlist(theta_hat[[i]]),
+                      theta_true = theta_true, CI_L = CI[[i]][[1]], CI_U = CI[[i]][[2]] )
+      pd = pd[pd$X2==sprintf("%0.1f", x2),]
+      points(pd$X1, pd$theta_true ,
+             ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
+             col='red', main="Confidence intervals", pch=19, cex=2)
+      points(pd$X1, pd$theta_hat, col='blue', pch=19, cex=2)
+      lines(pd$X1, pd$CI_L,      col='black',pch = 19,  type = "b", lty = 2, cex=0.8)
+      lines(pd$X1, pd$CI_U,      col='black',pch = 19,  type = "b", lty = 2, cex=0.8)
+    }
+    dev.off()
+}}
