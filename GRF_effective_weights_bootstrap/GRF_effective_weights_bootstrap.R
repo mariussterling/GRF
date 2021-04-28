@@ -134,18 +134,9 @@ for ( n in c(500,1000)){
   lines(as.matrix(theta_hat), col='green')
   lines(CI[,1], col='black')
   lines(CI[,2], col='black')
-  #polygon( c(CI[,1], rev(CI[,2])),col = "grey", border = NA)
   lines(CI_std[,1], col='blue')
   lines(CI_std[,2], col='blue')
   dev.off()
-
-  # png(file = glue('CI_std_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
-  # 
-  # plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI_std[,1], CI_std[,2]), col='black', main="Std Confidence intervals")
-  # lines(as.matrix(theta_hat), col='green')
-  # lines(CI_std[,1], col='red', lty=2)
-  # lines(CI_std[,2], col='red', lty=2)
-  # dev.off()
 }
   power_curve[k] = (reps- count)/100
   power_curve_std[k] = (reps- count_std)/100
