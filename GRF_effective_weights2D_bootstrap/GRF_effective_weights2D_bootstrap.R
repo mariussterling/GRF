@@ -54,10 +54,10 @@ tau = c(0.6)
 sig = 0.1
 width = 0.2
 c = 1
-n = n1 = 100 #data points for x1 
+n1 = 100 #data points for x1 
 b = 100 #number of bootstraps for MBS
 reps = 20 #repititions of whole simulation
-grids = 100 #grid points for CBs
+grids_x1 = 50 #grid points for CBs
 set.seed(100)
 node_size = 3 #bias controlling param of RFS
 x2_fixed = c(0.3,0.5) #fix x2
@@ -74,8 +74,9 @@ coverages_std = list()
 T_stat = list()
 set.seed(100)
 ptm <- proc.time()
-X = get_x(n, seed=42) #no replications for X because X is deterministic
+X = get_x(n1, seed=42) #no replications for X because X is deterministic
 X = X[order(X$X1),] #ordering X wrt X1
+n = nrow(X)
 theta_fun = function(X) theta_triangle(X, width)
 theta_true = theta_triangle(X, width) + qnorm(tau)*sig
 Y = get_y(X, theta_fun, sig, NULL,reps)
@@ -90,8 +91,9 @@ rf = lapply(1:reps, rand_for)
 
 
 ## Calculations for test set ----
-X_test = expand.grid(X1 = seq(-0.5,0.5,length.out=grids), X2 = x2_fixed)
+X_test = expand.grid(X1 = seq(-0.5,0.5,length.out=grids_x1), X2 = x2_fixed)
 Y_test = get_y(X_test, theta_fun, sig, NULL,reps)
+grids = nrow(X_test)
 theta_true_test = theta_triangle(X_test, width) + qnorm(tau)*sig
 #theta_hat_test = lapply(1:reps, function(j) interpp(X$X1,X$X2,unlist(theta_hat[[j]]),
 #                               xo = X_test$X1,yo = X_test$X2, linear = FALSE)[["z"]])
@@ -146,7 +148,7 @@ coverages_std[[as.character(n)]] = coverage_std
 
 
 ## Calculation of uniform confidence bands ----
-grid_T_stat = T_stat_abs[[1]]
+grid_T_stat = T_stat_abs[[1]] #first replication
 grid_T_max = apply(grid_T_stat, 1, max) # max of t_stats 
 dist_T_max = density(grid_T_max)
 png(file = glue('dist',
@@ -241,7 +243,7 @@ for (x2 in c(0.3,0.5)){
   png(file = glue('CI_bands_','n{formatC(as.integer(n), width=4, flag="0")}_',
                   'tau{formatC(tau*10, width=3 ,flag="0")}_',
                   'sig{formatC(sig*10, width=3 ,flag="0")}_',
-                  'reps{formatC(as.integer(reps) ,flag="0")}_',
+                  'grids{formatC(as.integer(grids) ,flag="0")}_',
                   'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
       width=1500, height=1500)
