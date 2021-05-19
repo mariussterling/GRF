@@ -55,7 +55,7 @@ CIs = list()
 CIs_std = list()
 coverages = list()
 coverages_std = list()
-node_size = 1
+node_size = 3
 
 
 ## Estimation ---------------
@@ -63,7 +63,7 @@ T_stat = list()
 set.seed(100)
 ptm <- proc.time()
 X = get_x(n, seed=42) #no replications for X because X is deterministic
-theta_fun = function(X) theta_triangle(X, width, tau)
+theta_fun = function(X) theta_triangle(X, width)
 theta_true = theta_triangle(X, width) + qnorm(tau)*sig
 Y = get_y(X, theta_fun, sig, NULL,reps)
 rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), 
@@ -151,7 +151,7 @@ pd$grid_CI_U = pd$theta_hat+(grid_q_star*pd$sigma)
 png(file = glue('CI_bands_','n{formatC(as.integer(n*10), width=4, flag="0")}_',
                 'tau{formatC(tau*10, width=3 ,flag="0")}_',
                 'sig{formatC(sig*10, width=3 ,flag="0")}_',
-                'reps{formatC(as.integer(reps) ,flag="0")}_',
+                'grids{formatC(as.integer(grids) ,flag="0")}_',
                 '.png'),
     width=1500, height=1500)
 
