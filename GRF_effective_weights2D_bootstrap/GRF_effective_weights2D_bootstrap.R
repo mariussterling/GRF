@@ -50,7 +50,7 @@ get_y = function(X, theta, sigma, seed=NULL, reps = 1){
 # }
 
 # Data initializing  ------------------------------------------------------
-tau = c(0.6)
+tau = c(0.5)
 sig = 0.1
 width = 0.2
 c = 1
@@ -82,7 +82,7 @@ theta_true = theta_triangle(X, width) + qnorm(tau)*sig
 Y = get_y(X, theta_fun, sig, NULL,reps)
 rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), quantile = tau, min.node.size = node_size)
 rf = lapply(1:reps, rand_for)
-#w = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
+w = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
 #objective_fun = function(theta,Y,alpha) sum(((Y-theta)) * as.matrix(alpha) * (tau -   (Y <= theta)))
 # theta_hat = lapply(1:reps, function(j) sapply(1:nrow(X), function(k)
 #   optimize(f=objective_fun,interval = c(0,1),
@@ -98,11 +98,11 @@ theta_true_test = theta_triangle(X_test, width) + qnorm(tau)*sig
 #theta_hat_test = lapply(1:reps, function(j) interpp(X$X1,X$X2,unlist(theta_hat[[j]]),
 #                               xo = X_test$X1,yo = X_test$X2, linear = FALSE)[["z"]])
 theta_hat_test = lapply(1:reps, function(j) predict(rf[[j]], newdata = X_test))
-rand_for =  function(j)  grf::quantile_forest( X_test ,data.matrix(Y_test[,j]),
-                                               quantile = tau, min.node.size = node_size)
-rf = lapply(1:reps, rand_for)
-w_test = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
-#w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
+#rand_for =  function(j)  grf::quantile_forest( X_test ,data.matrix(Y_test[,j]),
+#quantile = tau, min.node.size = node_size)
+#rf = lapply(1:reps, rand_for)
+#w_test = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
+w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
 
 ## just for simplicity, renaming test sets as original sets
 X = X_test
@@ -114,13 +114,14 @@ w = w_test
 kde = lapply(1:reps, function (j) density(Y[,j], n=nrow(X))) #estimation of the density
 f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat[[1]]))[2]))
 V_hat = 1/f_Y
-H_hat = sapply(1:reps, function(j) sapply(1:nrow(X),
-                                          function(k)  nrow(X) *((var(w[[j]][k,]*(tau - (Y[,j] <= unlist(theta_hat[[j]]))))))))
+#H_hat = sapply(1:reps, function(j) sapply(1:nrow(X),
+#function(k)  nrow(X) *((var(t(as.matrix(w[[j]]))%*%(tau - (Y[,j] <= unlist(theta_hat[[j]]))))))))
+H_hat = sapply(1:reps, function(j) nrow(X)* apply(w[[j]]*c(tau - (Y[,j] <= unlist(theta_hat[[j]]))),1,var))
 sigma_hat = (f_Y^(-2)*H_hat)^(1/2)
 e_multipliers = lapply(1:reps, function(j) lapply(1:b, function(j) rnorm(nrow(X), 0, 1)))
 
 T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
-  (w[[k]] %*% ((H_hat[,k]^(-1/2)) * (tau - (Y[,k] <= unlist(theta_hat[[k]])))  * e_multipliers[[k]][[j]]))@x))
+  apply(((w[[k]]) * c((H_hat[,k]^(-1/2)) * (tau - (Y[,k] <= unlist(theta_hat[[k]])))  * e_multipliers[[k]][[j]])),1,sum)))
 
 ## Confidence interval with test stat ----
 alpha_sig = 0.05
