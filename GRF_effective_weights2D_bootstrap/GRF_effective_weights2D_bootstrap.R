@@ -59,7 +59,7 @@ b = 100 #number of bootstraps for MBS
 reps = 20 #repititions of whole simulation
 grids_x1 = 50 #grid points for CBs
 set.seed(100)
-node_size = 3 #bias controlling param of RFS
+node_size = 5 #bias controlling param of RFS
 x2_fixed = c(0.3,0.5) #fix x2
 
 
@@ -104,28 +104,33 @@ theta_hat_test = lapply(1:reps, function(j) predict(rf[[j]], newdata = X_test))
 #w_test = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
 w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
 
+kde = lapply(1:reps, function (j) density(Y[,j], n=nrow(X))) #estimation of the density
+f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat_test[[1]]))[2]))
+V_hat = 1/f_Y
+psi = lapply(1:reps, function(k) t(sapply(1:nrow(theta_hat_test[[k]]), function(j) tau - (Y[,k]<=theta_hat_test[[k]][j]))))
+#H_hat = sapply(1:reps, function(j) sapply(1:nrow(X),
+#function(k)  nrow(X) *((var(t(as.matrix(w[[j]]))%*%(tau - (Y[,j] <= unlist(theta_hat[[j]]))))))))
+#H_hat = sapply(1:reps, function(j) nrow(X)* apply(w[[j]]*c(tau - (Y[,j] <= unlist(theta_hat[[j]]))),1,var))
+H_hat = sapply(1:reps, function(j) n* apply(w_test[[j]]*psi[[j]],1,var))
+sigma_hat = (f_Y^(-2)*H_hat)^(1/2)
+e_multipliers = lapply(1:reps, function(j) lapply(1:b, function(j) rnorm(n, 0, 1)))
+
+T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
+  (-(H_hat[,k]^(-1/2)*w_test[[k]]*psi[[k]])%*% e_multipliers[[k]][[j]])@x))
+
+
+#T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
+#apply(((w[[k]]) * c((H_hat[,k]^(-1/2)) * (tau - (Y[,k] <= unlist(theta_hat[[k]])))  * e_multipliers[[k]][[j]])),1,sum)))
+
 ## just for simplicity, renaming test sets as original sets
 X = X_test
 Y = Y_test
 theta_hat = theta_hat_test
 theta_true = theta_true_test
 w = w_test
-
-kde = lapply(1:reps, function (j) density(Y[,j], n=nrow(X))) #estimation of the density
-f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat[[1]]))[2]))
-V_hat = 1/f_Y
-#H_hat = sapply(1:reps, function(j) sapply(1:nrow(X),
-#function(k)  nrow(X) *((var(t(as.matrix(w[[j]]))%*%(tau - (Y[,j] <= unlist(theta_hat[[j]]))))))))
-H_hat = sapply(1:reps, function(j) nrow(X)* apply(w[[j]]*c(tau - (Y[,j] <= unlist(theta_hat[[j]]))),1,var))
-sigma_hat = (f_Y^(-2)*H_hat)^(1/2)
-e_multipliers = lapply(1:reps, function(j) lapply(1:b, function(j) rnorm(nrow(X), 0, 1)))
-
-T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
-  apply(((w[[k]]) * c((H_hat[,k]^(-1/2)) * (tau - (Y[,k] <= unlist(theta_hat[[k]])))  * e_multipliers[[k]][[j]])),1,sum)))
-
 ## Confidence interval with test stat ----
 alpha_sig = 0.05
-T_stat_abs = lapply(1:reps, function(j) abs(t(T_stat[[j]])))
+T_stat_abs = lapply(1:reps, function(j) abs((T_stat[[j]])))
 q_star = lapply(1:reps, function(j) colQuantiles(T_stat_abs[[j]] , probs= c(1-alpha_sig)))
 CI = lapply(1:reps, function(j) list(unlist(theta_hat[[j]])-(q_star[[j]]*sigma_hat[j]),
                                      unlist(theta_hat[[j]])+(q_star[[j]]*sigma_hat[j])))
@@ -149,19 +154,13 @@ coverages_std[[as.character(n)]] = coverage_std
 
 
 ## Calculation of uniform confidence bands ----
-grid_T_stat = T_stat_abs[[1]] #first replication
-grid_T_max = apply(grid_T_stat, 1, max) # max of t_stats 
-dist_T_max = density(grid_T_max)
-png(file = glue('dist',
-                '.png'),
-    width=1500, height=1500)
-
-plot(dist_T_max, col= 'blue')
-dev.off()
-
-grid_q_star = quantile(grid_T_max, 1-alpha_sig) # quantile of max_t_stat
-grid_CI_L = unlist(theta_hat[[1]])-(grid_q_star*sigma_hat[[1]])
-grid_CI_U = unlist(theta_hat[[1]])+(grid_q_star*sigma_hat[[1]])
+uniform_T_stat = lapply(1:reps, function(j) T_stat_abs[[j]]) 
+uniform_T_max = lapply(1:reps, function(j) apply(uniform_T_stat[[j]], 1, max)) # max of t_stats 
+uniform_q_star = lapply(1:reps, function(j) quantile(uniform_T_max[[j]], 1-alpha_sig)) # quantile of max_t_stat
+uniform_CI = lapply(1:reps, function(j) list(unlist(theta_hat[[j]])-(uniform_q_star[[j]]*sigma_hat[j]),
+                                             unlist(theta_hat[[j]])+(uniform_q_star[[j]]*sigma_hat[j])))
+coverage_uniform = mean(sapply(1:reps, function(k)
+  sum((theta_true > uniform_CI[[k]][[1]]) & (theta_true < uniform_CI[[k]][[2]]))/nrow(X)))*100
 
 # Plotting ----
 ## plot with average confidence intervals -----
@@ -233,6 +232,20 @@ for (num in c(1,4)){
   }}
 
 ## Plot for uniform confidence bands -----
+grid_T_stat = T_stat_abs[[1]] #first replication
+grid_T_max = apply(grid_T_stat, 1, max) # max of t_stats 
+dist_T_max = density(grid_T_max)
+png(file = glue('dist',
+                '.png'),
+    width=1500, height=1500)
+
+plot(dist_T_max, col= 'blue')
+dev.off()
+
+grid_q_star = quantile(grid_T_max, 1-alpha_sig) # quantile of max_t_stat
+grid_CI_L = unlist(theta_hat[[1]])-(grid_q_star*sigma_hat[[1]])
+grid_CI_U = unlist(theta_hat[[1]])+(grid_q_star*sigma_hat[[1]])
+
 for (x2 in c(0.3,0.5)){
   pd = data.frame(X1=X$X1,X2=X$X2, sigma = sigma_hat[[1]],theta_hat =  unlist(theta_hat[[1]]),
                   theta_true = theta_true, CI_L = CI[[1]][[1]], CI_U = CI[[1]][[2]],
