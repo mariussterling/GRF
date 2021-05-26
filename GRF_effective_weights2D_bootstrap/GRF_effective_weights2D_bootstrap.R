@@ -54,8 +54,8 @@ tau = c(0.5)
 sig = 0.1
 width = 0.2
 c = 1
-n1 = 100 #data points for x1 
-b = 100 #number of bootstraps for MBS
+n1 = 50 #data points for x1 
+b = 50 #number of bootstraps for MBS
 reps = 20 #repititions of whole simulation
 grids_x1 = 50 #grid points for CBs
 set.seed(100)
@@ -95,32 +95,19 @@ X_test = expand.grid(X1 = seq(-0.5,0.5,length.out=grids_x1), X2 = x2_fixed)
 Y_test = get_y(X_test, theta_fun, sig, NULL,reps)
 grids = nrow(X_test)
 theta_true_test = theta_triangle(X_test, width) + qnorm(tau)*sig
-#theta_hat_test = lapply(1:reps, function(j) interpp(X$X1,X$X2,unlist(theta_hat[[j]]),
-#                               xo = X_test$X1,yo = X_test$X2, linear = FALSE)[["z"]])
 theta_hat_test = lapply(1:reps, function(j) predict(rf[[j]], newdata = X_test))
-#rand_for =  function(j)  grf::quantile_forest( X_test ,data.matrix(Y_test[,j]),
-#quantile = tau, min.node.size = node_size)
-#rf = lapply(1:reps, rand_for)
-#w_test = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
 w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
 
-kde = lapply(1:reps, function (j) density(Y[,j], n=nrow(X))) #estimation of the density
+kde = lapply(1:reps, function (j) density(Y_test[,j], n=nrow(X))) #estimation of the density
 f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat_test[[1]]))[2]))
 V_hat = 1/f_Y
 psi = lapply(1:reps, function(k) t(sapply(1:nrow(theta_hat_test[[k]]), function(j) tau - (Y[,k]<=theta_hat_test[[k]][j]))))
-#H_hat = sapply(1:reps, function(j) sapply(1:nrow(X),
-#function(k)  nrow(X) *((var(t(as.matrix(w[[j]]))%*%(tau - (Y[,j] <= unlist(theta_hat[[j]]))))))))
-#H_hat = sapply(1:reps, function(j) nrow(X)* apply(w[[j]]*c(tau - (Y[,j] <= unlist(theta_hat[[j]]))),1,var))
 H_hat = sapply(1:reps, function(j) n* apply(w_test[[j]]*psi[[j]],1,var))
 sigma_hat = (f_Y^(-2)*H_hat)^(1/2)
 e_multipliers = lapply(1:reps, function(j) lapply(1:b, function(j) rnorm(n, 0, 1)))
 
 T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
   (-(H_hat[,k]^(-1/2)*w_test[[k]]*psi[[k]])%*% e_multipliers[[k]][[j]])@x))
-
-
-#T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
-#apply(((w[[k]]) * c((H_hat[,k]^(-1/2)) * (tau - (Y[,k] <= unlist(theta_hat[[k]])))  * e_multipliers[[k]][[j]])),1,sum)))
 
 ## just for simplicity, renaming test sets as original sets
 X = X_test
@@ -142,10 +129,19 @@ print(proc.time() - ptm)
 
 
 ## Calculating the coverage ----
+### Coverage of true theta
 coverage = mean(sapply(1:reps, function(k)
   sum((theta_true > CI[[k]][[1]]) & (theta_true < CI[[k]][[2]]))/nrow(X)))*100
 coverage_std = mean(sapply(1:reps, function(k)
   sum(theta_true > CI_std[[k]][[1]] & theta_true < CI_std[[k]][[2]])/nrow(X)))*100
+
+### Coverage of expected theta
+mat <- do.call("cbind",theta_hat)
+theta_hat_expected = rowMeans(mat)
+coverage_expected = mean(sapply(1:reps, function(k)
+  sum((theta_hat_expected > CI[[k]][[1]]) & (theta_hat_expected < CI[[k]][[2]]))/nrow(X)))*100
+coverage_expected_std = mean(sapply(1:reps, function(k)
+  sum((theta_hat_expected > CI_std[[k]][[1]]) & (theta_hat_expected < CI_std[[k]][[2]]))/nrow(X)))*100
 
 T_stats[[as.character(n)]]  = T_stat
 CIs[[as.character(n)]]  = CI
