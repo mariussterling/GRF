@@ -39,22 +39,18 @@ theta_triangle = function(x, width){
   pmax(1 - abs((x[[1]]) / width), 0)
 } 
 
-get_y = function(X, theta, sigma, seed=NULL, reps = 1){
-  set.seed(NULL)
+get_y = function(X, theta, sigma, seed=10, reps = 1){
+  set.seed(10)
   n = nrow(X)
   return(replicate(reps,(theta(X) + rnorm(n, 0, sigma))))
 } 
-
-# compute_weights <- function(forest_object, train_matrix, sparse_train_matrix, test_matrix, sparse_test_matrix, num_threads) {
-#   .Call('_grf_compute_weights', PACKAGE = 'grf', forest_object, train_matrix, sparse_train_matrix, test_matrix, sparse_test_matrix, num_threads)
-# }
 
 # Data initializing  ------------------------------------------------------
 tau = c(0.5)
 sig = 0.1
 width = 0.2
 c = 1
-n1 = 50 #data points for x1 
+n1 = 200 #data points for x1 
 b = 50 #number of bootstraps for MBS
 reps = 20 #repititions of whole simulation
 grids_x1 = 50 #grid points for CBs
@@ -83,11 +79,6 @@ Y = get_y(X, theta_fun, sig, NULL,reps)
 rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), quantile = tau, min.node.size = node_size)
 rf = lapply(1:reps, rand_for)
 w = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
-#objective_fun = function(theta,Y,alpha) sum(((Y-theta)) * as.matrix(alpha) * (tau -   (Y <= theta)))
-# theta_hat = lapply(1:reps, function(j) sapply(1:nrow(X), function(k)
-#   optimize(f=objective_fun,interval = c(0,1),
-#            tol = 0.0001, Y=Y[,j], alpha=w[[j]][k,])[1]))
-#theta_hat = lapply(1:reps, function(j) predict(rf[[j]]))
 
 
 ## Calculations for test set ----
@@ -104,6 +95,7 @@ V_hat = 1/f_Y
 psi = lapply(1:reps, function(k) t(sapply(1:nrow(theta_hat_test[[k]]), function(j) tau - (Y[,k]<=theta_hat_test[[k]][j]))))
 H_hat = sapply(1:reps, function(j) n* apply(w_test[[j]]*psi[[j]],1,var))
 sigma_hat = (f_Y^(-2)*H_hat)^(1/2)
+set.seed(5)
 e_multipliers = lapply(1:reps, function(j) lapply(1:b, function(j) rnorm(n, 0, 1)))
 
 T_stat = lapply(1:reps, function(k) sapply(1:b, function(j)
@@ -130,9 +122,9 @@ print(proc.time() - ptm)
 
 ## Calculating the coverage ----
 ### Coverage of true theta
-coverage = mean(sapply(1:reps, function(k)
+coverage_true = mean(sapply(1:reps, function(k)
   sum((theta_true > CI[[k]][[1]]) & (theta_true < CI[[k]][[2]]))/nrow(X)))*100
-coverage_std = mean(sapply(1:reps, function(k)
+coverage_true_std = mean(sapply(1:reps, function(k)
   sum(theta_true > CI_std[[k]][[1]] & theta_true < CI_std[[k]][[2]])/nrow(X)))*100
 
 ### Coverage of expected theta
@@ -155,8 +147,12 @@ uniform_T_max = lapply(1:reps, function(j) apply(uniform_T_stat[[j]], 1, max)) #
 uniform_q_star = lapply(1:reps, function(j) quantile(uniform_T_max[[j]], 1-alpha_sig)) # quantile of max_t_stat
 uniform_CI = lapply(1:reps, function(j) list(unlist(theta_hat[[j]])-(uniform_q_star[[j]]*sigma_hat[j]),
                                              unlist(theta_hat[[j]])+(uniform_q_star[[j]]*sigma_hat[j])))
-coverage_uniform = mean(sapply(1:reps, function(k)
+### Coverage by uniform confidence bands
+coverage_true_uniform = mean(sapply(1:reps, function(k)
   sum((theta_true > uniform_CI[[k]][[1]]) & (theta_true < uniform_CI[[k]][[2]]))/nrow(X)))*100
+
+coverage_expected_uniform = mean(sapply(1:reps, function(k)
+  sum((theta_hat_expected > uniform_CI[[k]][[1]]) & (theta_hat_expected < uniform_CI[[k]][[2]]))/nrow(X)))*100
 
 # Plotting ----
 ## plot with average confidence intervals -----
