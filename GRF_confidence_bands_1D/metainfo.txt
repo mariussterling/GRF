@@ -7,7 +7,7 @@ Description: 'Estimation of effective weights alpha_i(x_1) for the infeasable ob
 
 Keywords: 'RF, GRF, infeasable function, estimation, effective weights, confidence bands, confidence intervals '
 
-Author: #Kainat Khowaja'
+Author: 'Kainat Khowaja'
 
 See also: ''
 
