@@ -65,7 +65,7 @@ predict_forest = function(rf, X_test){
 
 weights_forest = function(rf, X_test){
   reps = length(rf)
-  w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
+  w_test = lapply(1:reps,function(j) get_forest_weights(rf[[j]], newdata = X_test))
   return(w_test)
 }
 
