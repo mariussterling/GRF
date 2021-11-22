@@ -15,7 +15,7 @@ width = 0.2
 c = 5
 n1 = 1000 #data points for x1 
 b = 500 #number of bootstraps for MBS
-reps = 100 #repititions of whole simulation
+reps = 10 #repititions of whole simulation
 grids_x1 = 200 #grid points for CBs
 grids_x1_list = c(15,20,30,50, 100)
 set.seed(100)
@@ -39,7 +39,7 @@ size_bandwidth_uni = list()
 size_bandwidth_std_uni = list()
 
 ### here define calculation type 'size', 'power' or 'normal'
-cal_type = 'size'
+cal_type = 'normal'
 ## if power, provide a constant
 theta_0s = seq(0.00001, 1, length.out = 5)
 theta_0 = 0

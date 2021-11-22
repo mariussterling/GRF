@@ -22,8 +22,8 @@ theta_triangle = function(x, cal_type, c = NULL){
     #theta = seq(0, 1, length.out = n)
     #theta = pmax(1 - abs((x[[1]]) / 0.2), 0)
     #theta =  sin(x[[1]]*3*pi)
-    #theta =  sin(x[[1]]*8*pi)
-    theta = 1+x[[1]]+2*x[[1]]^2+3*x[[1]]^3
+    theta =  sin(x[[1]]*8*pi)
+    #theta = 1+x[[1]]+2*x[[1]]^2+3*x[[1]]^3
     #theta = sin(x[[1]])
   }
   return(theta)

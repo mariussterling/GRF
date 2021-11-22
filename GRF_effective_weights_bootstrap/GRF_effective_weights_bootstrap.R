@@ -53,6 +53,7 @@ CIs_std = list()
 power_curve = list()
 power_curve_std = list()
 
+
 k = 1
 for (theta in theta) {
 for ( n in c(500,1000)){
@@ -63,7 +64,7 @@ for ( n in c(500,1000)){
   Y = get_y(n, theta, sig, 42, reps)
   rand_for =  function(j)  grf::quantile_forest(data.matrix(X[,j]),data.matrix(Y[,j]), quantile = 0.5)
   rf = lapply(1:ncol(X), rand_for)
-  w = lapply(1:ncol(X),function(x) get_sample_weights(rf[[x]]))
+  w = lapply(1:ncol(X),function(x) get_forest_weights(rf[[x]]))
   alpha = lapply(1:ncol(X), function(y) w[[y]]@x[1:n]) # extracting 1st column of ws as vector for 
   objective_fun = function(theta,Y,alpha,tau)  sum(((Y-theta)) * as.matrix(alpha) * (tau -   (Y <= theta)))
   theta_hat = sapply(1:ncol(X), function(j) optimize(f=objective_fun,interval = c(0,1), tol = 0.0001, Y=Y[,j], alpha=alpha[[j]], tau=tau)[1])
@@ -108,9 +109,8 @@ for ( n in c(500,1000)){
   d = density(unlist(T_stat[1,]), n=b)
 
   fn = glue(
-    'qRF_location_',
+    'density_plot_',
     'q{formatC(tau*100, width=3, flag="0")}___',
-    'new_var',
     'sigma{formatC(sig*100, width=3, flag="0")}___',
     'theta{formatC(theta*100, width=3, flag="0")}___',
     'n{formatC(as.integer(n), width=4, flag="0")}___',
