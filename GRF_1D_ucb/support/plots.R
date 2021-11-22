@@ -140,13 +140,13 @@ for (num in c(1,4)){
 ## Plot for uniform confidence bands -----
 ## just for simplicity, renaming test sets as original sets
 X = X_test
-Y = Y_test
 theta_hat = theta_hat_test
 theta_true = theta_true_test
 w = w_test
+x2=0.3
 grid_T_stat = T_stat_abs[[1]] #first replication
 grid_T_max = apply(grid_T_stat, 2, max) # max of t_stats for each bootstrap
-dist_T_max = density(grid_T_max)
+dist_T_max = density(grid_T_max, y= 'scaled')
 png(file = glue('images/',
                 'dist_',
                 'n{formatC(as.integer(n), width=4, flag="0")}_',
@@ -155,9 +155,10 @@ png(file = glue('images/',
                 'reps{formatC(as.integer(reps) ,flag="0")}_',
                 'x2{formatC(x2*10, width=3 ,flag="0")}_',
                 '.png'),
-    width=1500, height=1500)
-
-plot(dist_T_max, col= 'blue')
+    width=2000, height=1500)
+par(bg='transparent')
+plot(dist_T_max, col= 'blue', lwd = 5, cex.lab=3, cex.axis=2,
+     cex.main=3, cex.sub=3, main = 'Density plot of bootstrap test statistic')
 dev.off()
 
 grid_q_star = quantile(grid_T_max, 1-alpha_sig) # quantile of max_t_stat
@@ -172,8 +173,8 @@ for (x2 in c(0.3,0.5)){
   )
   #pd = pd[seq(1, nrow(pd), length.out = grids), ] #getting grids rows from our data frame
   #pd = pd[pd$X2==sprintf("%0.1f", x2	),]
-  par(bg=NA)
   png(file = glue('images/',
+                  'sin_8x',
                   'CI_bands_',
                   'n{formatC(as.integer(n), width=4, flag="0")}_',
                   'tau{formatC(tau*10, width=3 ,flag="0")}_',
@@ -182,17 +183,19 @@ for (x2 in c(0.3,0.5)){
                   'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
       width=1500, height=1500)
-  
+  par(bg='transparent')
   plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5), 
-       ylim=range(c(pd$theta_true,pd$theta_hat, pd$CI_L,pd$CI_U, pd$grid_CI_U,pd$grid_CI_L)))
+       ylim=range(c(pd$theta_true,pd$theta_hat, pd$CI_L,pd$CI_U, pd$grid_CI_U,pd$grid_CI_L))
+       , cex.axis = 1.5
+       )
   lines(pd$X1, pd$theta_true ,
         ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
         col='red', main="Confidence intervals", pch=19,type = "b", lty = 2, cex=2)
   lines(pd$X1, pd$theta_hat, col='blue', pch=19,type = "b", lty = 2, cex=2)
   lines(pd$X1, pd$CI_L,      col='black',pch = 19,type = "b", lty = 2, cex=0.8)
   lines(pd$X1, pd$CI_U,      col='black',pch = 19,type = "b", lty = 2, cex=0.8)
-  lines(pd$X1, pd$grid_CI_L, col='magenta',pch = 19, lty = 2, cex=1)
-  lines(pd$X1, pd$grid_CI_U, col='magenta',pch = 19, lty = 2, cex=1)
+  lines(pd$X1, pd$grid_CI_L, col='magenta',pch = 19, lty = 2, cex=3, lwd = 3)
+  lines(pd$X1, pd$grid_CI_U, col='magenta',pch = 19, lty = 2, cex=3, lwd = 3)
   
   
   dev.off()
