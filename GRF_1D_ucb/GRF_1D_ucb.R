@@ -10,7 +10,7 @@ ptm <- proc.time()
 # Data initializing  ------------------------------------------------------
 tau = c(0.1)
 sig = 1
-#widths = c(0.001,0.01, 0.04, 0.1, 0.2)
+#widths = c(0.001,0.01, 0.04, 0.1, 0.2) # used for the plot along with for loop
 width = 0.2
 c = 5
 n1 = 1000 #data points for x1 
@@ -52,20 +52,15 @@ theta_0 = 0
 set.seed(123)
 ## Sample
 X = get_x(n1, seed=42) #no replications for X because X is deterministic
-#X = X[order(X$X1),] #ordering X wrt X1
 theta_fun = function(X) theta_triangle(X, cal_type = cal_type, c = theta_0 )
 
-#theta_true = theta_triangle(X, width) #+ qnorm(tau)*sig
+#theta_true = theta_triangle(X, width) #+ qnorm(tau)*sig ##this is used for the case of quantile reg
 #Y = get_y(X, zero, sig, NULL,reps) #for size
 Y = get_y(X, theta_fun, sig, NULL,reps)
 n = nrow(X)
 
 ## Test set
-#X_test = expand.grid(X1 = seq(-0.5, 0.5,length.out=grids_x1))#, X2 = x2_fixed)
 X_test = get_x(grids_x1)
-#theta_fun_test = function(X) theta_triangle(X_test, width)
-#Y_test = get_y(X_test, theta_fun_test, sig, NULL,reps) 
-#Y_test = get_y(X_test, zero, sig, NULL,reps) #for size
 theta_true_test = theta_triangle(X_test,  cal_type = cal_type, c = theta_0)# + qnorm(tau)*sig
 grids = nrow(X_test)
 
@@ -76,7 +71,7 @@ w_test = weights_forest(rf,X_test)
 mat <- do.call("cbind",theta_hat_test)
 theta_hat_expected = rowMeans(mat)
 
-## Calculations for test statistic ----
+## Calculations for quantile forest ----
 # kde = lapply(1:reps, function (j) density(Y_test[,j], n=nrow(X))) #estimation of the density
 # f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat_test[[1]]))[2]))
 # V_hat = 1/f_Y
@@ -114,12 +109,6 @@ q_star = lapply(1:reps, function(j) rowQuantiles(T_stat_abs[[j]] , probs= c(1-al
 CI = confidence_interval(theta_hat_test, q_star, sigma_hat,reps)
 ## alpha quantile for standard normal
 set.seed(123)
-## using simple mean as estimate
-# theta_fun_test = function(X) theta_triangle(X_test, cal_type = cal_type, c = theta_0 )
-# Y_test = get_y(X_test, theta_fun_test, sig, NULL,reps) 
-# theta_hat_test = lapply(1:reps, function(j) rep(mean(Y_test[,j]),grids))
-# sigma_hat = sapply(1:reps, function(j) rep(sqrt(var(Y_test[,j])),grids))
-#q_norm = lapply(1:reps, function(j) rowQuantiles(std_T_stat[[j]] , probs= c(1-alpha_sig)))
 q_norm = lapply(1:reps, function(j) qnorm(1-alpha_sig/2))
 CI_std = confidence_interval(theta_hat_test, q_norm, sigma_hat,reps)
 
