@@ -17,6 +17,8 @@ theta_triangle = function(x, cal_type, c = NULL){
   } 
   
   else {
+    
+    ## uncomment your desired function
     #theta = abs(x[[1]])+0.5
     #n = length(x[[1]])
     #theta = seq(0, 1, length.out = n)
@@ -40,14 +42,6 @@ get_y = function(X, theta, sigma, seed=10, reps = 1){
 } 
 
 # Functions for effective weights and RF estimated parameter for test points ----
-
-## Arguments: (X,Y) - sample
-##            X_test - test points 
-##            tau - quantile for quantile forest
-##            node_size - minimum node size for the tree
-
-## Return :   theta_hat_test-random forest prediction for the given test points
-##            w_test        -random forest weights for the given test points
 
 fit_forest = function(X,Y,tau = 0.5,node_size = 5) { 
   #rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), quantile = tau, min.node.size = node_size)

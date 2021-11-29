@@ -130,12 +130,12 @@ for ( n in c(500,1000)){
   png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
 
   
-  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red', main="Confidence intervals")
-  lines(as.matrix(theta_hat), col='green')
-  lines(CI[,1], col='black')
-  lines(CI[,2], col='black')
-  lines(CI_std[,1], col='blue')
-  lines(CI_std[,2], col='blue')
+  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red', main="Confidence intervals", lwd = 2)
+  points(as.matrix(theta_hat), col='blue',pch = 19)
+  lines(CI[,1], col='black', lty = 1)
+  lines(CI[,2], col='black', lty = 1)
+  lines(CI_std[,1], col='blue4', lty = 6)
+  lines(CI_std[,2], col='blue4', lty = 6)
   dev.off()
 }
   power_curve[k] = (reps- count)/100

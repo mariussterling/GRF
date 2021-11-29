@@ -1,6 +1,6 @@
 
 # Plotting ----
-## Plot of coverage with bandwidths----
+## Plot of coverage with bandwidths----------------------------
 png(file = glue('images/',
                 'bandwidth_vs_coverage_',
                 'n{formatC(as.integer(n),width=4, flag="0")}_',
@@ -11,7 +11,7 @@ plot(node_sizes,as.numeric(unlist(coverages_widths_PW)),  type= 'l', xlab = bquo
 lines(node_sizes,as.numeric(unlist(coverages_widths_uniform)), col='magenta')
 dev.off()
 
-## Plot of size performance with bandwidths ----
+## Plot of size performance with bandwidths ------------------------
 png(file = glue('images/',
                 'bandwidth_vs_size_',
                 'n{formatC(as.integer(n),width=4, flag="0")}_',
@@ -22,7 +22,7 @@ plot(node_sizes,size_bandwidth_uni,  type= 'l', xlab = bquote(h), ylab = 'size',
 #lines(node_sizes,as.numeric(unlist(coverages_widths_uniform)), col='magenta')
 dev.off()
 
-## Plot of size performance with grids ----
+## Plot of size performance with grids ----------------------------
 png(file = glue('images/',
                 'more_reps_grids_vs_size_pw_',
                 'n{formatC(as.integer(n),width=4, flag="0")}_',
@@ -34,7 +34,7 @@ plot(grids_x1_list,1-(as.numeric(unlist(coverages_widths_PW)/100)),  type= 'l', 
 #lines(node_sizes,as.numeric(unlist(coverages_widths_uniform)), col='magenta')
 dev.off()
 
-## Plot of Power with changing theta_0 ----
+## Plot of Power with changing theta_0 ----------------------------
 png(file = glue('images/',
                 'power_curve_',
                 'n{formatC(as.integer(n),width=4, flag="0")}_',
@@ -45,7 +45,7 @@ plot(theta_0s,as.numeric(unlist(coverages_widths_PW)),  type= 'l', xlab = bquote
 lines(theta_0s,as.numeric(unlist(coverages_widths_uniform)), col='magenta')
 dev.off()
 
-# Plot of density of t stat of a single point vs standard normal ----
+# Plot of density of t stat of a single point vs standard normal ----------------------------
 d = density(unlist(T_stat[[1]][1,]), n=b)
 
 fn = glue('images/',
@@ -64,7 +64,7 @@ dev.off()
 
 
 
-## plot with average confidence intervals -----
+## plot with average confidence intervals -----------------------------
 # required variables (x2_fixed,CI,theta_true,theta_hat, T_stat_abs,sigma_hat,reps)
 for (x2 in x2_fixed){
   avg_ci_lower = 0
@@ -108,7 +108,7 @@ for (x2 in x2_fixed){
   dev.off()
 }
 
-## Plot with single/multiple confidence intervals ----
+## Plot with single/multiple confidence intervals ----------------------------
 for (num in c(1,4)){
   for (x2 in c(0.3,0.5)){
     png(file = glue('images/',
@@ -137,7 +137,7 @@ for (num in c(1,4)){
     dev.off()
   }}
 
-## Plot for uniform confidence bands -----
+## Plot for uniform confidence bands -----------------------------
 ## just for simplicity, renaming test sets as original sets
 X = X_test
 theta_hat = theta_hat_test
@@ -171,8 +171,7 @@ for (x2 in c(0.3,0.5)){
                   theta_true = theta_true_test, CI_L = CI[[1]][[1]], CI_U = CI[[1]][[2]],
                   grid_CI_L = uniform_CI[[1]][[1]],  grid_CI_U = uniform_CI[[1]][[2]]
   )
-  #pd = pd[seq(1, nrow(pd), length.out = grids), ] #getting grids rows from our data frame
-  #pd = pd[pd$X2==sprintf("%0.1f", x2	),]
+
   png(file = glue('images/',
                   'sin_8x',
                   'CI_bands_',
@@ -200,7 +199,7 @@ for (x2 in c(0.3,0.5)){
   
   dev.off()
 }
-# Power Curve ----
+# Power Curve ----------------------------
 ## Calculation for power ----
 h0= 0 #theta_0 under null hyp
 # counting coverage of CI 
@@ -228,7 +227,7 @@ pd = pd[order(pd$theta_true),] #ordering pd wrt theta
 pd = pd[pd$theta_true != 0,] #removing theta=0
 pd= pd[!duplicated(round(pd$theta_true,5)), ] #removing duplicates
 
-## Plotting PW power curve ----
+## Plotting PW power curve ----------------------------
 png(file = glue('images/',
                 'power_curve_',
                 'n{formatC(as.integer(n),width=4, flag="0")}_',
