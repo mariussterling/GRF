@@ -143,7 +143,6 @@ X = X_test
 theta_hat = theta_hat_test
 theta_true = theta_true_test
 w = w_test
-x2=0.3
 grid_T_stat = T_stat_abs[[1]] #first replication
 grid_T_max = apply(grid_T_stat, 2, max) # max of t_stats for each bootstrap
 dist_T_max = density(grid_T_max, y= 'scaled')
@@ -153,7 +152,6 @@ png(file = glue('images/',
                 'tau{formatC(tau*10, width=3 ,flag="0")}_',
                 'sig{formatC(sig*10, width=3 ,flag="0")}_',
                 'reps{formatC(as.integer(reps) ,flag="0")}_',
-                'x2{formatC(x2*10, width=3 ,flag="0")}_',
                 '.png'),
     width=2000, height=1500)
 par(bg='transparent')
@@ -165,8 +163,6 @@ grid_q_star = quantile(grid_T_max, 1-alpha_sig) # quantile of max_t_stat
 grid_CI_L = unlist(theta_hat[[1]])-(grid_q_star*sigma_hat[[1]])
 grid_CI_U = unlist(theta_hat[[1]])+(grid_q_star*sigma_hat[[1]])
 
-for (x2 in c(0.3,0.5)){
-  x2=0.3
   pd = data.frame(X1=X_test$X1, sigma = sigma_hat[,1],theta_hat =  unlist(theta_hat_test[[1]]),
                   theta_true = theta_true_test, CI_L = CI[[1]][[1]], CI_U = CI[[1]][[2]],
                   grid_CI_L = uniform_CI[[1]][[1]],  grid_CI_U = uniform_CI[[1]][[2]]
@@ -179,13 +175,13 @@ for (x2 in c(0.3,0.5)){
                   'tau{formatC(tau*10, width=3 ,flag="0")}_',
                   'sig{formatC(sig*10, width=3 ,flag="0")}_',
                   'grids{formatC(as.integer(grids) ,flag="0")}_',
-                  'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
-      width=1500, height=1500)
+      width=1600, height=800)
   par(bg='transparent')
+  par(mar=c(5,6,4,1)+.1)
   plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5), 
        ylim=range(c(pd$theta_true,pd$theta_hat, pd$CI_L,pd$CI_U, pd$grid_CI_U,pd$grid_CI_L))
-       , cex.axis = 1.5
+       , cex.axis = 2.5, cex.lab = 2.5
        )
   lines(pd$X1, pd$theta_true ,
         ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
@@ -196,9 +192,7 @@ for (x2 in c(0.3,0.5)){
   lines(pd$X1, pd$grid_CI_L, col='magenta',pch = 19, lty = 2, cex=3, lwd = 3)
   lines(pd$X1, pd$grid_CI_U, col='magenta',pch = 19, lty = 2, cex=3, lwd = 3)
   
-  
   dev.off()
-}
 # Power Curve ----------------------------
 ## Calculation for power ----
 h0= 0 #theta_0 under null hyp

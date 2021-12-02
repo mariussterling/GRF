@@ -78,7 +78,7 @@ theta_true = theta_triangle(X, width) + qnorm(tau)*sig
 Y = get_y(X, theta_fun, sig, NULL,reps)
 rand_for =  function(j)  grf::quantile_forest( X ,data.matrix(Y[,j]), quantile = tau, min.node.size = node_size)
 rf = lapply(1:reps, rand_for)
-w = sapply(1:reps,function(j) get_sample_weights(rf[[j]]))
+w = sapply(1:reps,function(j) get_forest_weights(rf[[j]]))
 
 
 ## Calculations for test set ----
@@ -86,8 +86,8 @@ X_test = expand.grid(X1 = seq(-0.5,0.5,length.out=grids_x1), X2 = x2_fixed)
 Y_test = get_y(X_test, theta_fun, sig, NULL,reps)
 grids = nrow(X_test)
 theta_true_test = theta_triangle(X_test, width) + qnorm(tau)*sig
-theta_hat_test = lapply(1:reps, function(j) predict(rf[[j]], newdata = X_test))
-w_test = lapply(1:reps,function(j) get_sample_weights(rf[[j]], newdata = X_test))
+theta_hat_test = lapply(1:reps, function(j) predict(rf[[j]], newdata = X_test)$predictions)
+w_test = lapply(1:reps,function(j) get_forest_weights(rf[[j]], newdata = X_test))
 
 kde = lapply(1:reps, function (j) density(Y_test[,j], n=nrow(X))) #estimation of the density
 f_Y= sapply(1:reps, function(j) unlist(approx(kde[[j]][["x"]], kde[[j]][["y"]], xout = c(theta_hat_test[[1]]))[2]))
@@ -181,12 +181,15 @@ for (x2 in c(0.3,0.5)){
                   'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
       width=1500, height=1500)
-  
+  par(bg='transparent')
+  par(mar=c(5,6,4,1)+.1)
   pd = data.frame(X1=X$X1,X2=X$X2, theta_hat =  avg_theta_hat,
                   theta_true = theta_true, CI_L = avg_ci_lower, CI_U = avg_ci_upper)
   pd = pd[pd$X2==sprintf("%0.1f", x2),]
   plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5), 
-       ylim= range(pd$theta_true, pd$theta_hat, pd$CI_L, pd$CI_U))
+       ylim= range(pd$theta_true, pd$theta_hat, pd$CI_L, pd$CI_U),
+  main= bquote(X[2]  == .(x2)),
+  cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5)
   lines(pd$X1, pd$theta_true ,
         ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
         col='red', main="Confidence intervals", pch=19, type = "b", lty = 2, cex=2)
@@ -206,9 +209,12 @@ for (num in c(1,4)){
                     'x2{formatC(x2*10, width=3 ,flag="0")}_',
                     '.png'),
         width=1500, height=1500)
-    
+    par(bg='transparent')
+    par(mar=c(5,6,4,1)+.1)
     plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5),
-         ylim= range(pd$theta_true, pd$theta_hat, pd$CI_L, pd$CI_U))
+         ylim= range(pd$theta_true, pd$theta_hat, pd$CI_L, pd$CI_U+0.1),
+         main= bquote(X[2]  == .(x2)),
+         cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5)
     for (i in 1:num){
       pd = data.frame(X1=X$X1,X2=X$X2, theta_hat =  unlist(theta_hat[[i]]),
                       theta_true = theta_true, CI_L = CI[[i]][[1]], CI_U = CI[[i]][[2]] )
@@ -253,9 +259,12 @@ for (x2 in c(0.3,0.5)){
                   'x2{formatC(x2*10, width=3 ,flag="0")}_',
                   '.png'),
       width=1500, height=1500)
-  
+  par(bg='transparent')
+  par(mar=c(5,6,4,1)+.1)
   plot(1, type="n", xlab="X", ylab=bquote(theta), xlim=c(-0.5, 0.5), 
-       ylim=range(c(pd$theta_true,pd$theta_hat, pd$CI_L,pd$CI_U, pd$grid_CI_U,pd$grid_CI_L)))
+       ylim=range(c(pd$theta_true,pd$theta_hat, pd$CI_L,pd$CI_U, pd$grid_CI_U,pd$grid_CI_L)),
+       main= bquote(X[2]  == .(x2)),
+       cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5)
   lines(pd$X1, pd$theta_true ,
         ylim=range(pd$theta_true,pd$theta_hat, pd$CI_L, pd$CI_U),
         col='red', main="Confidence intervals", pch=19,type = "b", lty = 2, cex=2)
