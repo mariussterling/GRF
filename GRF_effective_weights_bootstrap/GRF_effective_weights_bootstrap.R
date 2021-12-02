@@ -118,19 +118,27 @@ for ( n in c(500,1000)){
     '.png'
   )
 
-  png(file = fn)
-
-  plot(d, ylab='', xlab='',ylim = c(0,0.45), main="Density plot of bootsrap test statistic")
+  png(file = fn, width=1500, height=1500)
+  par(bg='transparent')
+  par(mar=c(5,6,4,1)+.1)
+  plot(d, ylab='', xlab='',ylim = c(0,0.45),
+       main= bquote(n  == .(n)),
+       cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5)
   ylim = c(0,1)
   x_std = rnorm(n, mean = 0, sd= 1)
   std_d = density(x_std, n=b)
   lines(std_d, col = 'blue')
   dev.off()
 
-  png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png'))
-
-  
-  plot(rep(theta,reps), type = 'l', ylab='', xlab='', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red', main="Confidence intervals", lwd = 2)
+  png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png')
+      , width=1500, height=1500)
+  par(bg='transparent')
+  par(mar=c(5,6,4,1)+.1)
+  plot(rep(theta,reps), type = 'l', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red',
+       xlab="replications", ylab=bquote(theta),
+       main= bquote(n  == .(n)),
+       cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5,
+      lwd = 2)
   points(as.matrix(theta_hat), col='blue',pch = 19)
   lines(CI[,1], col='black', lty = 1)
   lines(CI[,2], col='black', lty = 1)
