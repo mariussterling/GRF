@@ -120,25 +120,25 @@ for ( n in c(500,1000)){
 
   png(file = fn, width=1500, height=1500)
   par(bg='transparent')
-  par(mar=c(5,6,4,1)+.1)
+  par(mar=c(5,6,4,1), mgp=c(4, 3, 0))
   plot(d, ylab='', xlab='',ylim = c(0,0.45),
        main= bquote(n  == .(n)),
-       cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5,
-       lwd = 3)
+       cex.axis = 4, cex.lab = 4, cex.main=4,
+       lwd = 4)
   ylim = c(0,1)
   x_std = rnorm(n, mean = 0, sd= 1)
   std_d = density(x_std, n=b)
-  lines(std_d, col = 'blue', lwd = 3)
+  lines(std_d, col = 'blue', lwd = 4)
   dev.off()
 
   png(file = glue('CI_','n{formatC(as.integer(n), width=4, flag="0")}_','theta{formatC(theta*100, width=3, flag="0")}_','.png')
       , width=1500, height=1500)
   par(bg='transparent')
-  par(mar=c(5,6,4,1)+.1)
+  par(mar=c(7,8,4,5)+1, mgp=c(6, 3, 0))
   plot(rep(theta,reps), type = 'l', ylim=range(theta, CI[,1], CI[,2],CI_std[,1], CI_std[,2]), col='red',
        xlab="replications", ylab=bquote(theta),
        main= bquote(n  == .(n)),
-       cex.axis = 2.5, cex.lab = 2.5, cex.main=2.5,
+       cex.axis =4, cex.lab = 4, cex.main=4,
       lwd = 3)
   points(as.matrix(theta_hat), col='blue',pch = 19,cex = 2)
   lines(CI[,1], col='black', lty = 1,lwd = 3)
