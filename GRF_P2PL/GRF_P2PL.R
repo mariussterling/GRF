@@ -1,4 +1,4 @@
-rm(list = ls())
+
 print(.libPaths())
 libraries = c('grf', 'pROC', 'glue', 'caret', 'future.apply')
 lapply(libraries,function(x)if(!(x %in% installed.packages())){

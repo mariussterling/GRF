@@ -1,3 +1,41 @@
+[<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/banner.png" width="888" alt="Visit QuantNet">](http://quantlet.de/)
+
+## [<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/qloqo.png" alt="Visit QuantNet">](http://quantlet.de/) **GRF_effective_weights2D** [<img src="https://github.com/QuantLet/Styleguide-and-FAQ/blob/master/pictures/QN2.png" width="60" alt="Visit QuantNet 2.0">](http://quantlet.de/)
+
+```yaml
+
+
+Name of Quantlet: GRF_effective_weights2D
+
+Published in: 'GRF'
+
+Description: 'Estimation of effective weights alpha_i(x_1, x_2) for the infeasable observations theta_tilde. The effective weights are computed by a regression forest on a grid of observations x_ij=(-0.5 + i/n1, 0 + 0.02 * j) for i=1,...,n1 and j=0,...,50, for n1=50, 100, 200 and target variable Y_i=theta(x_ij) + eps_ij, for a given theta function, here triangle function theta(x_ij) = max(0, 1 - |x_ij,1|/0.2), with Gaussian noise eps_ij with mean zero and standard deviation of 0 and 0.1.'
+
+Keywords: 'RF, GRF, infeasable function, estimation, effective weights, bandwidth, contour'
+
+Author: 'Marius Sterling'
+
+See also: ''
+
+Submitted:  '20.01.2021'
+
+```
+
+![Picture1](RF_theta_triangle___effective_weights___sigma000___n050___contour___x_000_050.png)
+
+![Picture2](RF_theta_triangle___effective_weights___sigma000___n100___contour___x_000_050.png)
+
+![Picture3](RF_theta_triangle___effective_weights___sigma000___n200___contour___x_000_050.png)
+
+![Picture4](RF_theta_triangle___effective_weights___sigma010___n050___contour___x_000_050.png)
+
+![Picture5](RF_theta_triangle___effective_weights___sigma010___n100___contour___x_000_050.png)
+
+![Picture6](RF_theta_triangle___effective_weights___sigma010___n200___contour___x_000_050.png)
+
+### R Code
+```r
+
 rm(list=ls())
 library(grf)
 library(dplyr)
@@ -6,10 +44,6 @@ library(glue)
 library(NNTbiomarker)
 set.seed(42)
 
-
-# Getting the path of your current open file
-current_path = rstudioapi::getActiveDocumentContext()$path 
-setwd(dirname(current_path ))
 
 # Function definition for data --------------------------------------------
 get_x = function(n, seed=NULL){
@@ -51,12 +85,12 @@ get_y = function(X, theta, sigma, seed=NULL){
 # Computing ---------------------------------------------------------------
 for (sig in c(0, 0.1)){
   rfs = list()
-  for (n in c(50, 100, 200)){
+  for (nX1 in c(50, 100, 200)){
     width = 0.2
-    X = get_x(n, seed=42)
+    X = get_x(nX1, seed=42)
     theta = function(X) theta_triangle(X, width)
     Y = get_y(X, theta, sig, 42)
-    rfs[[as.character(n)]] = rf = regression_forest(X, Y)
+    rfs[[as.character(nX1)]] = rf = regression_forest(X, Y)
     eps_tilde = Y - theta(X)
     alpha = get_sample_weights(rf)
     theta_tilde = theta(X) + alpha %*% eps_tilde
@@ -75,7 +109,7 @@ for (sig in c(0, 0.1)){
       'scatter/',
       'RF_theta_triangle___theta_tilde___',
       'sigma{formatC(sig*100, width=3, flag="0")}___',
-      'n{formatC(n, width=3, flag="0")}_scatter',
+      'n{formatC(nX1, width=3, flag="0")}_scatter',
       '.png'
     )
     ggsave(fn, plot = p, dpi = 300)
@@ -163,3 +197,7 @@ for (sig in c(0, 0.1)){
     }
   }
 }
+
+```
+
+automatically created on 2021-01-22
