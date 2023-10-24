@@ -8,21 +8,21 @@ source("support/functions.R")
 
 ptm <- proc.time()
 # Data initializing  ------------------------------------------------------
-tau = c(0.1)
-sig = 1
+tau = c(0.05) #confidence level
+sig = 1 #sigma in error
 #widths = c(0.001,0.01, 0.04, 0.1, 0.2) # used for the plot along with for loop
-width = 0.2
-c = 5
-n1 = 1000 #data points for x1 
+width = 0.2 #eeta
+c = 5 #constant
+n1 = 500 #data points for x1 
 b = 500 #number of bootstraps for MBS
-reps = 10 #repititions of whole simulation
-grids_x1 = 200 #grid points for CBs
+reps = 100 #repititions of whole simulation
+grids_x1 = 20 #grid points for CBs
 grids_x1_list = c(15,20,30,50, 100)
 set.seed(100)
-node_size = c(3)
+node_size = c(5) #h
 node_sizes = c(2,5,7,10,15) #bias controlling param of RFS
 x2_fixed = c(0.3,0.5) #fix x2
-alpha_sig = 0.05
+alpha_sig = 0.1
 
 rfs = list()
 T_stats = list()
@@ -128,7 +128,7 @@ coverage_expected = coverage(theta_hat_expected, CI, grids, reps)
 
 ## Calculation of uniform confidence bands ----
 uniform_T_stat = lapply(1:reps, function(j) T_stat_abs[[j]]) 
-uniform_T_max = lapply(1:reps, function(j) apply(uniform_T_stat[[j]], 1, max)) # max of t_stats 
+uniform_T_max = lapply(1:reps, function(j) apply(uniform_T_stat[[j]], 2, max)) # max of t_stats 
 uniform_q_star = lapply(1:reps, function(j) quantile(uniform_T_max[[j]], 1-alpha_sig)) # quantile of max_t_stat
 
 uniform_CI = confidence_interval(theta_hat_test, uniform_q_star, sigma_hat, reps)
@@ -138,7 +138,7 @@ coverage_expected_uniform = coverage_uniform(theta_hat_expected, uniform_CI, gri
 
 ## calculation of asymptotic uniform coverage
 std_T_stat = lapply(1:reps,function(k)  sapply(1:b, function(j) abs(rnorm(grids))))
-std_T_max = lapply(1:reps, function(j) apply(std_T_stat[[j]], 1, max))
+std_T_max = lapply(1:reps, function(j) apply(std_T_stat[[j]], 2, max))
 std_q_star = lapply(1:reps, function(j) quantile(std_T_max[[j]], 1-alpha_sig)) # quantile of max_t_stat
 std_CI = confidence_interval(theta_hat_test, std_q_star, sigma_hat, reps)
 coverage_std_uniform = coverage_uniform(theta_true_test, std_CI, grids,reps)
